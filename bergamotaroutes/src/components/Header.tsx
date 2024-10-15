@@ -27,7 +27,7 @@ export function Header() {
               href="/Register"
               className="hover:text-blue-hover transition-colors duration-300 font-bold"
             >
-              Register
+              Routes
             </Link>
           </li>
           <li>
