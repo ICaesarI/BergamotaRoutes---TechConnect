@@ -7,13 +7,13 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
         "black-main": "#111926",
         "blue-hover": "#77c3fa",
+        "gray-main": "#878a9a",
       },
     },
   },
