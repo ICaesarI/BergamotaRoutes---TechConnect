@@ -24,10 +24,10 @@ export function Header() {
           </li>
           <li>
             <Link
-              href="/Register"
+              href="/Scan"
               className="hover:text-blue-hover transition-colors duration-300 font-bold"
             >
-              Register
+              Scan
             </Link>
           </li>
           <li>
@@ -40,7 +40,7 @@ export function Header() {
           </li>
           <li>
             <Link
-              href="/contact"
+              href="/Register"
               className="bg-black-main text-white p-1 rounded-lg hover:bg-blue-hover transition-colors duration-300 "
             >
               Register

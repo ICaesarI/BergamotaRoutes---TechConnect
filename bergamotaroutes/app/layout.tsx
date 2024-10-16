@@ -1,4 +1,4 @@
-import Link from "next/link";
+//import Link from "next/link";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 import { Header } from "@techconnect /src/components/Header";
@@ -14,6 +14,7 @@ export const metadata = {
   title: "BergamotaRoutes",
   description: "BergamotaRoutes Description",
 };
+
 
 export default function RootLayout({
   children,
