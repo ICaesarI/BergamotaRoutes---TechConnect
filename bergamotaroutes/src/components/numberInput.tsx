@@ -1,36 +1,123 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../database/firebaseConfiguration";
+import { useRouter } from "next/navigation";
 
-const NumberInput = () => {
-  const [values, setValues] = useState(["", "", "", ""]); // Estado para los cuatro inputs
+export default function PhoneVerification() {
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(""); // Estado para manejar errores
 
-  const handleChange = (index, e) => {
-    const newNumbers = [...values];
-    newNumbers[index] = e.target.value; // Actualiza el valor del input
+  const router = useRouter();
 
-    setValues(newNumbers); // Actualiza el estado
+  useEffect(() => {
+    // Inicializar Recaptcha solo si no ha sido creado previamente
+    if (!window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          "recaptcha-container",
+          {
+            size: "normal",
+            callback: () => {
+              // Recaptcha resuelto
+              console.log("Recaptcha verificado");
+            },
+            "expired-callback": () => {
+              setErrorMessage("Recaptcha ha expirado, refresca la página.");
+            },
+          },
+          auth
+        );
+        window.recaptchaVerifier.render(); // Asegurarse de renderizar el reCAPTCHA
+      } catch (error) {
+        console.error("Error al inicializar Recaptcha:", error);
+        setErrorMessage("Error al inicializar Recaptcha");
+      }
+    }
+  }, []);
 
-    // Mueve el foco al siguiente input automáticamente
-    if (e.target.value.length === 1 && index < values.length - 1) {
-      document.getElementById(`input-${index + 1}`)?.focus(); // Usar comillas invertidas para interpolación
+  const handlePhoneNumberChange = (e) => {
+    setPhoneNumber(e.target.value);
+  };
+
+  const handleOTPChange = (e) => {
+    setOtp(e.target.value);
+  };
+
+  const handleSendOTP = async () => {
+    if (!window.recaptchaVerifier) {
+      setErrorMessage(
+        "Recaptcha no está disponible. Refresca la página e inténtalo de nuevo."
+      );
+      return;
+    }
+
+    try {
+      const formattedPhoneNumber = `+${phoneNumber.replace(/\D/g, "")}`;
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        formattedPhoneNumber,
+        window.recaptchaVerifier
+      );
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      setErrorMessage(""); // Reiniciar el mensaje de error en caso de éxito
+      alert("OTP ha sido enviado");
+    } catch (e) {
+      console.error("Error al enviar OTP:", e);
+      setErrorMessage("Error al enviar OTP. Intenta nuevamente.");
+    }
+  };
+
+  const handleOTPSubmit = async () => {
+    try {
+      if (confirmationResult) {
+        await confirmationResult.confirm(otp);
+        alert("Número de teléfono verificado exitosamente");
+        router.push("/");
+      } else {
+        setErrorMessage("No se ha enviado OTP. Por favor intenta de nuevo.");
+      }
+    } catch (e) {
+      console.error("Error al verificar OTP:", e);
+      setErrorMessage("Error al verificar OTP. Intenta nuevamente.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center space-x-4">
-      {values.map((value, index) => (
-        <div key={index} className="flex flex-col items-center">
+    <div>
+      <h2>Verificación de Teléfono</h2>
+      {!otpSent ? (
+        <div>
+          <label htmlFor="phone-number">Introduce tu número de teléfono:</label>
           <input
-            id={`input-${index}`} // Asignar un id único para cada input
             type="text"
-            value={value}
-            onChange={(e) => handleChange(index, e)}
-            className="w-12 h-15 text-center text-5xl border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
-            maxLength={1} // Limitar a un solo carácter
+            id="phone-number"
+            value={phoneNumber}
+            onChange={handlePhoneNumberChange}
+            placeholder="e.g. +1234567890"
           />
+          <div id="recaptcha-container"></div>
+          <button onClick={handleSendOTP}>Enviar OTP</button>
         </div>
-      ))}
+      ) : (
+        <div>
+          <label htmlFor="otp">Introduce el OTP:</label>
+          <input
+            type="text"
+            id="otp"
+            value={otp}
+            onChange={handleOTPChange}
+            placeholder="Introduce OTP"
+          />
+          <button onClick={handleOTPSubmit}>Enviar OTP</button>
+        </div>
+      )}
+      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}{" "}
+      {/* Mostrar errores */}
     </div>
   );
-};
-
-export default NumberInput;
+}

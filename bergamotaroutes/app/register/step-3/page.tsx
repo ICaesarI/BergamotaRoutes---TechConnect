@@ -12,7 +12,8 @@ import birthdayIcon from "@techconnect /src/img/birthdayIcon.png";
 import cameraIcon from "@techconnect /src/img/cameraIcon.png";
 import mobileImg from "@techconnect /src/img/mobileImg.png";
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { auth } from "@techconnect /src/database/firebaseConfiguration";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -24,9 +25,18 @@ export default function Step_2() {
     router.push("/register/step-2"); // Cambia esto a la ruta del paso anterior
   };
 
-  const handleNext = () => {
-    router.push("/"); // Cambia esto a la ruta del siguiente paso
-  };
+  useEffect(() => {
+    const checkEmailVerification = setInterval(() => {
+      auth.onAuthStateChanged((user) => {
+        if (user && user.emailVerified) {
+          clearInterval(checkEmailVerification);
+          router.push("/home"); // Redirige al home si el correo está verificado
+        }
+      });
+    }, 3000); // Verifica cada 3 segundos
+
+    return () => clearInterval(checkEmailVerification); // Limpia el intervalo al desmontar
+  }, [auth, router]);
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
@@ -71,19 +81,21 @@ export default function Step_2() {
 
       {/* Columna Derecha */}
       <div className="bg-white p-8 h-screen flex flex-col justify-center">
-        <h1 className="text-center text-2xl md:text-3xl font-bold mb-6">Confirm Account</h1>
-        <div className="flex flex-col md:flex-row items-center text-lg md:text-3xl text-gray-main mb-6">
-          <Image
-            src={mobileImg}
-            alt="Mobile Image"
-            width={100}
-            height={100}
-            className="mb-4 md:mb-0 md:mr-4"
-          />
-          <p className="text-center md:text-left">We sent a confirmation code to your cell phone number</p>
-        </div>
-        <div className="mb-8">
-          <NumberInput />
+        <h1 className="text-center text-2xl md:text-3xl font-bold mb-6">
+          Confirm Account
+        </h1>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <h1 className="text-3xl font-bold mb-6">
+            Por favor verifica tu correo
+          </h1>
+          <p>
+            Hemos enviado un correo de verificación a tu dirección. Por favor
+            revisa tu bandeja de entrada.
+          </p>
+          <p>
+            Una vez que verifiques tu correo, serás redirigido automáticamente a
+            la página de inicio.
+          </p>
         </div>
         {/* Botones de Navegación */}
         <div className="flex justify-between pt-64">
@@ -92,12 +104,6 @@ export default function Step_2() {
             className="bg-black-main text-white w-24 md:w-28 text-center rounded-full text-lg md:text-2xl hover:opacity-80 transition duration-300 cursor-pointer p-2 md:p-3"
           >
             Back
-          </button>
-          <button
-            onClick={handleNext}
-            className="bg-black-main text-white w-24 md:w-28 text-center rounded-full text-lg md:text-2xl hover:opacity-80 transition duration-300 cursor-pointer p-2 md:p-3"
-          >
-            Next
           </button>
         </div>
       </div>

@@ -3,27 +3,97 @@
 import { Logo } from "@techconnect /src/components/Logo";
 import { InfoBlock } from "@techconnect /src/components/infoBlock";
 import packageImg from "@techconnect /src/img/packageImg.png";
-import emailIcon from "@techconnect /src/img/emailLogo.png";
 import userIcon from "@techconnect /src/img/userIcon.png";
-import passwordIcon from "@techconnect /src/img/passwordLogo.png";
-import phoneIcon from "@techconnect /src/img/phoneIcon.png";
 import birthdayIcon from "@techconnect /src/img/birthdayIcon.png";
-import cameraIcon from "@techconnect /src/img/cameraIcon.png";
+
 
 import { useState } from "react";
-
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-export default function Step_1() {
-  const [selectedGender, setSelectedGender] = useState("");
-  const router = useRouter();
 
-  const handleGenderSelect = (gender) => {
-    setSelectedGender(gender);
+import { validateName } from "@techconnect /src/security/validateName";
+import { validateBirthday } from "@techconnect /src/security/validateBirthdat";
+import { validateImage } from "@techconnect /src/security/validateImage";
+
+import InputField from "@techconnect /src/components/inputField";
+import GenderSelection from "@techconnect /src/components/genderSelection";
+import PhotoUpload from "@techconnect /src/components/photoUpload";
+
+import { useRegister } from "@techconnect /src/components/context/registerContext";
+
+export default function Step_1() {
+  const [name, setName] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    lastname?: string;
+    birthday?: string;
+    gender?: string;
+  }>({});
+  const [selectedGender, setSelectedGender] = useState("");
+
+  const router = useRouter();
+  const { updateRegisterData } = useRegister();
+
+  // Manejo de la carga de imágenes
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && validateImage(file)) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+        setErrors((prev) => ({ ...prev, image: null })); // Limpia errores si la imagen es válida
+      };
+    } else {
+      setErrors((prev) => ({
+        ...prev,
+        image:
+          "Formato de imagen no válido. Por favor sube una imagen en formato JPG, PNG o GIF.",
+      }));
+    }
   };
 
+  // Manejo de la selección de género
+  const handleGenderSelect = (gender: string) => {
+    setSelectedGender(gender);
+    setErrors((prev) => ({ ...prev, gender: null })); // Limpia el error de género cuando se selecciona uno
+  };
+
+  // Manejo del clic en el botón "Siguiente"
   const handleNextClick = () => {
+    const newErrors: {
+      name?: string;
+      lastname?: string;
+      birthday?: string;
+      gender?: string;
+    } = {};
+
+    if (!validateName(name)) {
+      newErrors.name = "El nombre es inválido";
+    }
+
+    if (!validateName(lastname)) {
+      newErrors.lastname = "El apellido es inválido";
+    }
+
+    if (!validateBirthday(birthday)) {
+      newErrors.birthday = "La fecha de nacimiento es requerida";
+    }
+
+    if (!selectedGender) {
+      newErrors.gender = "El género es requerido";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    updateRegisterData({ name, lastname, birthday, selectedGender });
     router.push("/register/step-2");
   };
 
@@ -33,8 +103,6 @@ export default function Step_1() {
       <div className="bg-gray-main flex flex-col justify-between items-center p-6">
         <div className="flex flex-col gap-10">
           <Logo />
-
-          {/* InfoBlocks */}
           <InfoBlock
             circleColor="bg-white"
             lineHeight="h-16"
@@ -60,57 +128,45 @@ export default function Step_1() {
             textColor="text-black"
           />
         </div>
-        <Image src={packageImg} alt="Package Image" width={250} height={250}/>
+        <Image src={packageImg} alt="Package Image" width={250} height={250} />
       </div>
 
       {/* Columna derecha */}
       <div className="bg-white p-8 flex flex-col justify-between h-screen">
         <h1 className="text-3xl font-bold mb-6 text-center md:text-left">
-          Sign up and start optimizing your path to faster, more efficient destinations!
+          Sign up and start optimizing your path to faster, more efficient
+          destinations!
         </h1>
-
         {/* Inputs en una cuadrícula */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Nombre */}
           <div>
-            <h1 className="font-bold text-xl">Name:</h1>
-            <div className="flex items-center bg-gray-main p-3 rounded-lg">
-              <Image
-                src={userIcon}
-                alt="User Icon"
-                width={30}
-                height={30}
-                className="mr-3"
-              />
-              <input
-                type="text"
-                placeholder="Enter your name"
-                className="bg-transparent outline-none flex-1 text-white placeholder-white"
-                required
-              />
-            </div>
+            <InputField
+              label="Nombre:"
+              placeholder="Enter your name"
+              icon={userIcon}
+              value={name}
+              onChange={setName}
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm">{errors.name}</p>
+            )}{" "}
+            {/* Mostrar error */}
           </div>
-
           {/* Apellido */}
           <div>
-            <h1 className="font-bold text-xl">Last Name:</h1>
-            <div className="flex items-center bg-gray-main p-3 rounded-lg">
-              <Image
-                src={userIcon}
-                alt="User Icon"
-                width={30}
-                height={30}
-                className="mr-3"
-              />
-              <input
-                type="text"
-                placeholder="Enter your last name"
-                className="bg-transparent outline-none flex-1 text-white placeholder-white"
-                required
-              />
-            </div>
+            <InputField
+              label="Last Name:"
+              placeholder="Enter your last name"
+              icon={userIcon}
+              value={lastname}
+              onChange={setLastname}
+            />
+            {errors.lastname && (
+              <p className="text-red-500 text-sm">{errors.lastname}</p>
+            )}{" "}
+            {/* Mostrar error */}
           </div>
-
           {/* Fecha de nacimiento */}
           <div>
             <h1 className="font-bold text-xl">Birthday:</h1>
@@ -126,46 +182,32 @@ export default function Step_1() {
                 type="date"
                 className="bg-transparent outline-none flex-1 text-white"
                 required
+                onChange={(e) => setBirthday(e.target.value)}
               />
             </div>
+            {errors.birthday && (
+              <p className="text-red-500 text-sm">{errors.birthday}</p> // Mostrar error
+            )}
           </div>
-
           {/* Subir foto */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center p-3 border border-gray-500 rounded-full w-12 h-12 opacity-75 hover:opacity-100 hover:border-blue-500 cursor-pointer transition-opacity duration-300">
-              <Image src={cameraIcon} alt="Camera Icon" width={30} height={30} />
-            </div>
-            <h1 className="font-bold text-xl">Upload a photo</h1>
-          </div>
+          <PhotoUpload
+            profileImage={profileImage}
+            handleImageUpload={handleImageUpload}
+          />
+          {errors.image && (
+            <p className="text-red-500 text-sm">{errors.image}</p>
+          )}{" "}
+          {/* Mostrar error de imagen */}
         </div>
-
         {/* Selección de género */}
-        <div className="flex flex-col items-center justify-center mt-6">
-          <h1 className="font-bold text-xl mb-4">Gender:</h1>
-          <div className="flex gap-4">
-            <p
-              onClick={() => handleGenderSelect("Male")}
-              className={`w-32 text-center py-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                selectedGender === "Male"
-                  ? "bg-black text-white"
-                  : "bg-white text-black border border-black"
-              }`}
-            >
-              Male
-            </p>
-            <p
-              onClick={() => handleGenderSelect("Female")}
-              className={`w-32 text-center py-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                selectedGender === "Female"
-                  ? "bg-black text-white"
-                  : "bg-white text-black border border-black"
-              }`}
-            >
-              Female
-            </p>
-          </div>
-        </div>
-
+        <GenderSelection
+          selectedGender={selectedGender}
+          handleGenderSelect={handleGenderSelect}
+        />
+        {errors.gender && (
+          <p className="text-red-500 text-sm">{errors.gender}</p>
+        )}{" "}
+        {/* Mostrar error de género */}
         {/* Botón de siguiente */}
         <div className="flex justify-end mt-8">
           <button
