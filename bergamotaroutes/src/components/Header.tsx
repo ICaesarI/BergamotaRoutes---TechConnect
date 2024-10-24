@@ -31,7 +31,7 @@ export function Header() {
           </li>
           <li>
             <Link
-              href="/login"
+              href="/Login"
               className="hover:text-blue-hover transition-colors duration-300 font-bold"
             >
               Login
