@@ -7,31 +7,42 @@ import OtherMarkers from "./OtherMarkers";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
 
-const MapComponent: React.FC = () => {
+interface MapComponentProps {
+  otherMarkersData?: { lat: number; lng: number; label: string }[]; // Otros marcadores
+}
+
+const MapComponent: React.FC<MapComponentProps> = ({ otherMarkersData }) => {
   const mapRef = useRef<L.Map | null>(null);
   const userLocationRef = useRef<L.LatLng | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [sortedMarkers, setSortedMarkers] = useState<
     { lat: number; lng: number; label: string; distance: number }[]
   >([]);
 
-  const otherMarkersData = useRef([
-    { lat: 20.655152217635692, lng: -103.32543897713083, label: "CUCEI" },
-    {
-      lat: 20.651166606563386,
-      lng: -103.31960249016042,
-      label: "La Vid Restaurant",
-    },
-    { lat: 20.649670720513537, lng: -103.30730724417981, label: "McDonald's" },
-    {
-      lat: 20.62305742861593,
-      lng: -103.06885345787988,
-      label: "Zapotlanejo Centro",
-    }
-  ]).current;
+  useEffect(() => {
+    // Obtener la ubicación actual del usuario
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+      },
+      (error) => {
+        console.error("Error al obtener la ubicación:", error);
+        // Establecer una ubicación predeterminada en caso de error
+        setUserLocation({ lat: -34.617, lng: -58.383 });
+      }
+    );
+  }, []);
 
   useEffect(() => {
-    if (!mapRef.current) {
-      mapRef.current = L.map("map").setView([-34.617, -58.383], 13);
+    if (!mapRef.current && userLocation) {
+      mapRef.current = L.map("map").setView(
+        [userLocation.lat, userLocation.lng],
+        13
+      );
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution:
@@ -39,27 +50,11 @@ const MapComponent: React.FC = () => {
       }).addTo(mapRef.current);
     }
 
-    const fetchLocationAndMarkers = async () => {
-      try {
-        const userLocation = await new Promise<L.LatLng>((resolve, reject) => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const { latitude, longitude } = position.coords;
-                resolve(L.latLng(latitude, longitude));
-              },
-              (error) => {
-                console.error("Error obteniendo la ubicación:", error);
-                reject(error);
-              }
-            );
-          } else {
-            alert("La geolocalización no es soportada por este navegador.");
-            reject(new Error("Geolocation not supported"));
-          }
-        });
+    const fetchMarkers = async () => {
+      if (!userLocation) return;
 
-        userLocationRef.current = userLocation;
+      try {
+        userLocationRef.current = L.latLng(userLocation.lat, userLocation.lng);
 
         const distances = otherMarkersData.map(({ lat, lng, label }) => {
           const markerLocation = L.latLng(lat, lng);
@@ -75,16 +70,11 @@ const MapComponent: React.FC = () => {
 
         setSortedMarkers(optimizedRoute);
 
-        console.log("Start Location:", userLocationRef.current);
-        console.log("Waypoints:", optimizedRoute);
-
         // Solicitar la ruta a OpenRouteService
         const routeCoordinates = await fetchRouteFromORS(
           userLocationRef.current,
           optimizedRoute
         );
-
-        console.log("Route Coordinates:", routeCoordinates);
 
         // Dibujar la ruta en el mapa
         if (mapRef.current && routeCoordinates.length > 0) {
@@ -93,14 +83,11 @@ const MapComponent: React.FC = () => {
           );
         }
       } catch (error) {
-        console.error(
-          "Error en la obtención de la ubicación o marcadores:",
-          error
-        );
+        console.error("Error en la obtención de los marcadores:", error);
       }
     };
 
-    fetchLocationAndMarkers();
+    fetchMarkers();
 
     return () => {
       if (mapRef.current) {
@@ -108,7 +95,7 @@ const MapComponent: React.FC = () => {
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [userLocation, otherMarkersData]); // Dependencias del useEffect
 
   return (
     <>
@@ -127,7 +114,7 @@ const MapComponent: React.FC = () => {
             {sortedMarkers.map((marker) => (
               <li
                 key={marker.label}
-                className="bg-white  border border-black-main rounded items-center justify-between gap-4 p-4"
+                className="bg-white border border-black-main rounded items-center justify-between gap-4 p-4"
               >
                 {marker.label}: {marker.distance.toFixed(2)} km
               </li>

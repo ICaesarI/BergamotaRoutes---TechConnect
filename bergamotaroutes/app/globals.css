@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "~leaflet/dist/leaflet.css";
+
 /* globals.css */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
-  font-family: 'Roboto', sans-serif; /* Usamos la fuente Roboto */
+  font-family: "Roboto", sans-serif; /* Usamos la fuente Roboto */
   background-color: #f0f0f0; /* Un fondo gris claro */
 }
 
@@ -17,17 +20,17 @@ a {
 /* Estilos predeterminados para la navegación (pantallas grandes) */
 nav {
   width: 100%; /* Asegúrate de que el nav ocupe todo el ancho */
-  background-color: transparent; 
-  position: relative; 
+  background-color: transparent;
+  position: relative;
 }
 
 nav ul {
   display: flex; /* En fila para pantallas grandes */
-  justify-content: space-between; 
-  padding: 16px; 
-  width: 100%; 
-  margin: 0; 
-  list-style-type: none; 
+  justify-content: space-between;
+  padding: 16px;
+  width: 100%;
+  margin: 0;
+  list-style-type: none;
 }
 
 /* Estilos para los elementos de la lista */
@@ -53,6 +56,6 @@ nav ul li:first-child {
   nav ul {
     display: grid; /* Cambiar a grid para pantallas pequeñas */
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px; 
+    gap: 16px;
   }
 }
