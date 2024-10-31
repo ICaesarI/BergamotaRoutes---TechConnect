@@ -1,7 +1,7 @@
 // app/map/page.tsx (o donde necesites el componente)
 "use client";
 
-import MapComponent from "@techconnect /src/components/map/Map"; // Asegúrate de que la ruta sea correcta
+import MapComponent from "@techconnect /src/components/map/Map";
 
 export default function Map() {
   return (
