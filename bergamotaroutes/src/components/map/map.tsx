@@ -6,6 +6,8 @@ import LocationMarker from "./LocationMarker";
 import OtherMarkers from "./OtherMarkers";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
+import { db } from "@techconnect /src/database/firebaseConfiguration"; // Asegúrate de que la ruta sea correcta
+import { addDoc, collection, updateDoc, doc, getDocs } from "firebase/firestore";
 
 const MapComponent: React.FC = () => {
   const mapRef = useRef<L.Map | null>(null);
@@ -13,20 +15,14 @@ const MapComponent: React.FC = () => {
   const [sortedMarkers, setSortedMarkers] = useState<
     { lat: number; lng: number; label: string; distance: number }[]
   >([]);
-
+  const [packages, setPackages] = useState<any[]>([]);
+  const [message, setMessage] = useState<string>("");
+  
   const otherMarkersData = useRef([
     { lat: 20.655152217635692, lng: -103.32543897713083, label: "CUCEI" },
-    {
-      lat: 20.651166606563386,
-      lng: -103.31960249016042,
-      label: "La Vid Restaurant",
-    },
+    { lat: 20.651166606563386, lng: -103.31960249016042, label: "La Vid Restaurant" },
     { lat: 20.649670720513537, lng: -103.30730724417981, label: "McDonald's" },
-    {
-      lat: 20.62305742861593,
-      lng: -103.06885345787988,
-      label: "Zapotlanejo Centro",
-    }
+    { lat: 20.62305742861593, lng: -103.06885345787988, label: "Zapotlanejo Centro" }
   ]).current;
 
   useEffect(() => {
@@ -75,16 +71,11 @@ const MapComponent: React.FC = () => {
 
         setSortedMarkers(optimizedRoute);
 
-        console.log("Start Location:", userLocationRef.current);
-        console.log("Waypoints:", optimizedRoute);
-
         // Solicitar la ruta a OpenRouteService
         const routeCoordinates = await fetchRouteFromORS(
           userLocationRef.current,
           optimizedRoute
         );
-
-        console.log("Route Coordinates:", routeCoordinates);
 
         // Dibujar la ruta en el mapa
         if (mapRef.current && routeCoordinates.length > 0) {
@@ -93,14 +84,20 @@ const MapComponent: React.FC = () => {
           );
         }
       } catch (error) {
-        console.error(
-          "Error en la obtención de la ubicación o marcadores:",
-          error
-        );
+        console.error("Error en la obtención de la ubicación o marcadores:", error);
       }
     };
 
     fetchLocationAndMarkers();
+
+    // Fetch packages from Firestore
+    const fetchPackages = async () => {
+      const querySnapshot = await getDocs(collection(db, "packages"));
+      const packagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPackages(packagesData);
+    };
+
+    fetchPackages();
 
     return () => {
       if (mapRef.current) {
@@ -109,6 +106,45 @@ const MapComponent: React.FC = () => {
       }
     };
   }, []);
+
+  // Función para actualizar el estado del paquete en Firestore
+  const updatePackageStatus = async (packageId: string, currentStatus: string) => {
+    const packageRef = doc(db, "packages", packageId);
+    let newStatus = "";
+    let showRoute = false;
+
+    if (currentStatus === "Saliendo del almacén") {
+      newStatus = "En camino";
+    } else if (currentStatus === "En camino") {
+      newStatus = "El driver se dirige a tu domicilio";
+      showRoute = true; // Solo mostrar ruta si está en este estado
+    } else {
+      newStatus = "Saliendo del almacén"; // Regresar al primer estado
+    }
+
+    const updatedData = {
+      status: newStatus,
+      step: newStatus,
+      message: newStatus === "El driver se dirige a tu domicilio"
+        ? "El paquete ha salido para su entrega."
+        : `El paquete está ${newStatus.toLowerCase()}.`,
+      showRoute: showRoute,
+    };
+
+    try {
+      await updateDoc(packageRef, updatedData);
+      console.log("Estado del paquete actualizado:", updatedData);
+      // Actualizar la lista de paquetes
+      const updatedPackages = packages.map(pkg =>
+        pkg.id === packageId ? { ...pkg, ...updatedData } : pkg
+      );
+      setPackages(updatedPackages);
+      setMessage(`Paquete ${packageId} actualizado a ${newStatus}`); // Mensaje de éxito
+    } catch (error) {
+      console.error("Error al actualizar el estado del paquete: ", error);
+      setMessage(`Error al actualizar el paquete ${packageId}`); // Mensaje de error
+    }
+  };
 
   return (
     <>
@@ -127,7 +163,7 @@ const MapComponent: React.FC = () => {
             {sortedMarkers.map((marker) => (
               <li
                 key={marker.label}
-                className="bg-white  border border-black-main rounded items-center justify-between gap-4 p-4"
+                className="bg-white border border-black-main rounded items-center justify-between gap-4 p-4"
               >
                 {marker.label}: {marker.distance.toFixed(2)} km
               </li>
@@ -135,6 +171,36 @@ const MapComponent: React.FC = () => {
           </ul>
         </div>
       )}
+      <table className="min-w-full border border-gray-300 mt-4">
+        <thead>
+          <tr>
+            <th className="border border-gray-300 p-2">ID del Paquete</th>
+            <th className="border border-gray-300 p-2">Ubicación</th>
+            <th className="border border-gray-300 p-2">Estado</th>
+            <th className="border border-gray-300 p-2">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {packages.map((pkg) => (
+            <tr key={pkg.id}>
+              <td className="border border-gray-300 p-2">{pkg.id}</td>
+              <td className="border border-gray-300 p-2">
+                {pkg.location ? `Lat: ${pkg.location.lat}, Lng: ${pkg.location.lng}` : "Ubicación no disponible"}
+              </td>
+              <td className="border border-gray-300 p-2">{pkg.status}</td>
+              <td className="border border-gray-300 p-2">
+                <button
+                  onClick={() => updatePackageStatus(pkg.id, pkg.status)}
+                  className="mt-2 p-1 bg-blue-500 text-white rounded"
+                >
+                  Actualizar Estado
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {message && <div className="mt-4 text-red-500">{message}</div>}
     </>
   );
 };
