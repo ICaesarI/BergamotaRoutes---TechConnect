@@ -14,6 +14,8 @@ import OtherMarkers from "./OtherMarkers";
 import { optimizeRoute } from "./RouteOptimizer";
 // Importa la función para obtener rutas de OpenRouteService.
 import { fetchRouteFromORS } from "./RouteService";
+import { db } from "@techconnect /src/database/firebaseConfiguration"; // Asegúrate de que la ruta sea correcta
+import { addDoc, collection, updateDoc, doc, getDocs } from "firebase/firestore";
 
 // Define el componente funcional MapComponent.
 const MapComponent: React.FC = () => {
@@ -25,21 +27,27 @@ const MapComponent: React.FC = () => {
   const [sortedMarkers, setSortedMarkers] = useState<
     { lat: number; lng: number; label: string; distance: number }[]
   >([]);
+<<<<<<< HEAD:src/components/map/map.tsx
 
   // Datos de los otros marcadores en el mapa.
+=======
+  const [packages, setPackages] = useState<any[]>([]);
+  const [message, setMessage] = useState<string>("");
+  
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
   const otherMarkersData = useRef([
     { lat: 20.655152217635692, lng: -103.32543897713083, label: "CUCEI" },
-    {
-      lat: 20.651166606563386,
-      lng: -103.31960249016042,
-      label: "La Vid Restaurant",
-    },
+    { lat: 20.651166606563386, lng: -103.31960249016042, label: "La Vid Restaurant" },
     { lat: 20.649670720513537, lng: -103.30730724417981, label: "McDonald's" },
+<<<<<<< HEAD:src/components/map/map.tsx
     {
       lat: 20.62305742861593,
       lng: -103.06885345787988,
       label: "Zapotlanejo Centro",
     },
+=======
+    { lat: 20.62305742861593, lng: -103.06885345787988, label: "Zapotlanejo Centro" }
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
   ]).current;
 
   // useEffect para ejecutar el código una vez que el componente se monta.
@@ -104,38 +112,62 @@ const MapComponent: React.FC = () => {
         // Actualiza el estado con los marcadores ordenados.
         setSortedMarkers(optimizedRoute);
 
+<<<<<<< HEAD:src/components/map/map.tsx
         // Log de la ubicación de inicio y puntos intermedios.
         console.log("Start Location:", userLocationRef.current);
         console.log("Waypoints:", optimizedRoute);
 
         // Solicita la ruta a OpenRouteService.
+=======
+        // Solicitar la ruta a OpenRouteService
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
         const routeCoordinates = await fetchRouteFromORS(
           userLocationRef.current,
           optimizedRoute
         );
 
+<<<<<<< HEAD:src/components/map/map.tsx
         // Log de las coordenadas de la ruta.
         console.log("Route Coordinates:", routeCoordinates);
 
         // Dibuja la ruta en el mapa si hay coordenadas disponibles.
+=======
+        // Dibujar la ruta en el mapa
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
         if (mapRef.current && routeCoordinates.length > 0) {
           L.polyline(routeCoordinates, { color: "blue", weight: 4 }).addTo(
             mapRef.current
           );
         }
       } catch (error) {
+<<<<<<< HEAD:src/components/map/map.tsx
         // Manejo de errores en la obtención de la ubicación o marcadores.
         console.error(
           "Error en la obtención de la ubicación o marcadores:",
           error
         );
+=======
+        console.error("Error en la obtención de la ubicación o marcadores:", error);
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
       }
     };
 
     // Llama a la función para obtener la ubicación y marcadores.
     fetchLocationAndMarkers();
 
+<<<<<<< HEAD:src/components/map/map.tsx
     // Función de limpieza para eliminar el mapa al desmontar el componente.
+=======
+    // Fetch packages from Firestore
+    const fetchPackages = async () => {
+      const querySnapshot = await getDocs(collection(db, "packages"));
+      const packagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPackages(packagesData);
+    };
+
+    fetchPackages();
+
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -144,7 +176,49 @@ const MapComponent: React.FC = () => {
     };
   }, []);
 
+<<<<<<< HEAD:src/components/map/map.tsx
   // Renderiza el componente.
+=======
+  // Función para actualizar el estado del paquete en Firestore
+  const updatePackageStatus = async (packageId: string, currentStatus: string) => {
+    const packageRef = doc(db, "packages", packageId);
+    let newStatus = "";
+    let showRoute = false;
+
+    if (currentStatus === "Saliendo del almacén") {
+      newStatus = "En camino";
+    } else if (currentStatus === "En camino") {
+      newStatus = "El driver se dirige a tu domicilio";
+      showRoute = true; // Solo mostrar ruta si está en este estado
+    } else {
+      newStatus = "Saliendo del almacén"; // Regresar al primer estado
+    }
+
+    const updatedData = {
+      status: newStatus,
+      step: newStatus,
+      message: newStatus === "El driver se dirige a tu domicilio"
+        ? "El paquete ha salido para su entrega."
+        : `El paquete está ${newStatus.toLowerCase()}.`,
+      showRoute: showRoute,
+    };
+
+    try {
+      await updateDoc(packageRef, updatedData);
+      console.log("Estado del paquete actualizado:", updatedData);
+      // Actualizar la lista de paquetes
+      const updatedPackages = packages.map(pkg =>
+        pkg.id === packageId ? { ...pkg, ...updatedData } : pkg
+      );
+      setPackages(updatedPackages);
+      setMessage(`Paquete ${packageId} actualizado a ${newStatus}`); // Mensaje de éxito
+    } catch (error) {
+      console.error("Error al actualizar el estado del paquete: ", error);
+      setMessage(`Error al actualizar el paquete ${packageId}`); // Mensaje de error
+    }
+  };
+
+>>>>>>> chino:bergamotaroutes/src/components/map/map.tsx
   return (
     <>
       {/* Contenedor del mapa con dimensiones específicas. */}
@@ -166,7 +240,7 @@ const MapComponent: React.FC = () => {
             {sortedMarkers.map((marker) => (
               <li
                 key={marker.label}
-                className="bg-white  border border-black-main rounded items-center justify-between gap-4 p-4"
+                className="bg-white border border-black-main rounded items-center justify-between gap-4 p-4"
               >
                 {marker.label}: {marker.distance.toFixed(2)} km
               </li>
@@ -174,6 +248,36 @@ const MapComponent: React.FC = () => {
           </ul>
         </div>
       )}
+      <table className="min-w-full border border-gray-300 mt-4">
+        <thead>
+          <tr>
+            <th className="border border-gray-300 p-2">ID del Paquete</th>
+            <th className="border border-gray-300 p-2">Ubicación</th>
+            <th className="border border-gray-300 p-2">Estado</th>
+            <th className="border border-gray-300 p-2">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {packages.map((pkg) => (
+            <tr key={pkg.id}>
+              <td className="border border-gray-300 p-2">{pkg.id}</td>
+              <td className="border border-gray-300 p-2">
+                {pkg.location ? `Lat: ${pkg.location.lat}, Lng: ${pkg.location.lng}` : "Ubicación no disponible"}
+              </td>
+              <td className="border border-gray-300 p-2">{pkg.status}</td>
+              <td className="border border-gray-300 p-2">
+                <button
+                  onClick={() => updatePackageStatus(pkg.id, pkg.status)}
+                  className="mt-2 p-1 bg-blue-500 text-white rounded"
+                >
+                  Actualizar Estado
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {message && <div className="mt-4 text-red-500">{message}</div>}
     </>
   );
 };

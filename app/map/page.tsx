@@ -1,7 +1,11 @@
 // app/map/page.tsx (o donde necesites el componente)
 "use client";
 
+<<<<<<< HEAD:app/map/page.tsx
 import MapComponent from "@techconnect /src/components/map/Map";
+=======
+import MapComponent from "@techconnect /src/components/map/map"; // Asegúrate de que la ruta sea correcta
+>>>>>>> chino:bergamotaroutes/app/map/page.tsx
 
 export default function Map() {
   return (

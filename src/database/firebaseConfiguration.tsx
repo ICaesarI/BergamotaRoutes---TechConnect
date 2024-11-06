@@ -5,13 +5,14 @@ import { getAuth } from "firebase/auth";
 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBEPi427QUL5dWHcoPRaiv5wyfizPfRSbM",
-  authDomain: "bergamotaroutes-cf66b.firebaseapp.com",
-  projectId: "bergamotaroutes-cf66b",
-  storageBucket: "bergamotaroutes-cf66b.appspot.com",
-  messagingSenderId: "541328377043",
-  appId: "1:541328377043:web:41dc8e0b470c069b200026"
+  apiKey: "AIzaSyDgio8VdOEbYglA4zOoCkP3uleS4xzxqLU", // Clave de API web
+  authDomain: "bergamotaroutesoficial.firebaseapp.com", // Asegúrate de que este dominio sea correcto
+  projectId: "bergamotaroutesoficial", // ID del proyecto
+  storageBucket: "bergamotaroutesoficial.appspot.com", // Asegúrate de que este bucket sea correcto
+  messagingSenderId: "192843768390", // Número de proyecto
+  appId: "1:192843768390:web:41dc8e0b470c069b200026" // Debe ser el correcto
 };
+
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
