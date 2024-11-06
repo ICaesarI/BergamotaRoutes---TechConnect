@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Importa la biblioteca de React y el hook useEffect.
 import React, { useEffect } from "react";
 // Importa Leaflet para manejar la ubicación en el mapa.
@@ -14,10 +15,24 @@ interface LocationMarkerProps {
 }
 
 // Define el componente funcional LocationMarker con sus props.
+=======
+// components/LocationMarker.tsx
+import React, { useEffect } from "react";
+import L from "leaflet";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import ReactDOMServer from "react-dom/server";
+
+interface LocationMarkerProps {
+  userLocation: L.LatLng;
+  map: L.Map;
+}
+
+>>>>>>> origin
 const LocationMarker: React.FC<LocationMarkerProps> = ({
   userLocation,
   map,
 }) => {
+<<<<<<< HEAD
   // useEffect se ejecuta al montar el componente o cuando cambian las props userLocation o map.
   useEffect(() => {
     // Verifica que la ubicación del usuario y el mapa estén disponibles.
@@ -45,4 +60,26 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
 };
 
 // Exporta el componente para ser utilizado en otras partes de la aplicación.
+=======
+  useEffect(() => {
+    if (userLocation && map) {
+      const userIcon = L.divIcon({
+        className: "custom-marker",
+        html: ReactDOMServer.renderToString(
+          <AccountCircleIcon style={{ fontSize: "30px", color: "green" }} />
+        ),
+        iconSize: [30, 30],
+      });
+
+      L.marker(userLocation, { icon: userIcon })
+        .addTo(map)
+        .bindPopup("Tu ubicación actual")
+        .openPopup();
+    }
+  }, [userLocation, map]);
+
+  return null;
+};
+
+>>>>>>> origin
 export default LocationMarker;

@@ -12,7 +12,15 @@ interface ClientMapProps {
   showRoute: boolean;
 }
 
+<<<<<<< HEAD
 const ClientMap: React.FC<ClientMapProps> = ({ driverLocation, userLocation, showRoute }) => {
+=======
+const ClientMap: React.FC<ClientMapProps> = ({
+  driverLocation,
+  userLocation,
+  showRoute,
+}) => {
+>>>>>>> origin
   const [route, setRoute] = useState<L.LatLng[]>([]);
 
   useEffect(() => {
@@ -32,14 +40,34 @@ const ClientMap: React.FC<ClientMapProps> = ({ driverLocation, userLocation, sho
   }, [driverLocation, userLocation, showRoute]);
 
   return (
+<<<<<<< HEAD
     <MapContainer center={driverLocation || [20.6512, -103.3196]} zoom={13} style={{ height: "400px", width: "100%" }}>
+=======
+    <MapContainer
+      center={driverLocation || [20.6512, -103.3196]}
+      zoom={13}
+      style={{ height: "400px", width: "100%" }}
+    >
+>>>>>>> origin
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+<<<<<<< HEAD
       {driverLocation && <Marker position={[driverLocation.lat, driverLocation.lng]} />}
       {userLocation && <Marker position={[userLocation.lat, userLocation.lng]} />}
       {showRoute && route.length > 0 && <Polyline positions={route} color="blue" />}
+=======
+      {driverLocation && (
+        <Marker position={[driverLocation.lat, driverLocation.lng]} />
+      )}
+      {userLocation && (
+        <Marker position={[userLocation.lat, userLocation.lng]} />
+      )}
+      {showRoute && route.length > 0 && (
+        <Polyline positions={route} color="blue" />
+      )}
+>>>>>>> origin
     </MapContainer>
   );
 };

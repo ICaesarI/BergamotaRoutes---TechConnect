@@ -1,6 +1,7 @@
 // app/map/page.tsx (o donde necesites el componente)
 "use client";
 
+<<<<<<< HEAD
 <<<<<<< HEAD:app/map/page.tsx
 import MapComponent from "@techconnect /src/components/map/Map";
 =======
@@ -22,6 +23,15 @@ export default function Map() {
 
       {/* Componente de Mapa */}
       <div className="h-full w-full col-span-2">
+=======
+import MapComponent from "@techconnect /src/components/map/Map"; // Asegúrate de que la ruta sea correcta
+
+export default function Map() {
+  return (
+    <div className="min-h-screen h-screen">
+      {/* Componente de Mapa */}
+      <div className="h-full w-full">
+>>>>>>> origin
         <MapComponent />
       </div>
     </div>
