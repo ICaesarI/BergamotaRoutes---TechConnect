@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
