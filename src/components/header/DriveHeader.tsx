@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "../Logo";
 import { Menu, Close } from "@mui/icons-material";
+import { usePathname } from "next/navigation";
 
 export function DriveHeader() {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
+  const currentRoute = usePathname(); // Obtenemos la ruta actual
 
   return (
     <header className="flex flex-col items-center w-full border-b-2 border-black-main bg-black-main p-4 lg:flex-row">
@@ -35,7 +37,9 @@ export function DriveHeader() {
           <li>
             <Link
               href="/"
-              className="hover:text-blue-hover transition-colors duration-300 font-bold"
+              className={`${
+                currentRoute === "/" ? "text-blue-500" : "text-white"
+              } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
               Home
             </Link>
@@ -43,7 +47,9 @@ export function DriveHeader() {
           <li>
             <Link
               href="/tracking"
-              className="hover:text-blue-hover transition-colors duration-300 font-bold"
+              className={`${
+                currentRoute === "/tracking" ? "text-blue-500" : "text-white"
+              } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
               Start Route
             </Link>
@@ -51,7 +57,9 @@ export function DriveHeader() {
           <li>
             <Link
               href="/profile"
-              className="hover:text-blue-hover transition-colors duration-300 font-bold"
+              className={`${
+                currentRoute === "/profile" ? "text-blue-500" : "text-white"
+              } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
               Ver Perfil
             </Link>

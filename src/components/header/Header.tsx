@@ -4,11 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "../Logo";
 import { Menu, Close } from "@mui/icons-material";
+import { usePathname } from "next/navigation";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
+
+  const currentRoute = usePathname(); // Obtenemos la ruta actual
 
   return (
     <header className="flex flex-col items-center w-full border-b-2 border-black-main bg-black-main p-4 lg:flex-row">
@@ -17,12 +20,12 @@ export function Header() {
 
         <div>
           <button
-          onClick={toggleMenu}
-          className="text-white ml-auto lg:hidden mt-2"
-          aria-label="Toggle menu"
-        >
-          {isOpen ? <Close fontSize="large" /> : <Menu fontSize="large" />}
-        </button>
+            onClick={toggleMenu}
+            className="text-white ml-auto lg:hidden mt-2"
+            aria-label="Toggle menu"
+          >
+            {isOpen ? <Close fontSize="large" /> : <Menu fontSize="large" />}
+          </button>
         </div>
       </div>
 
@@ -35,7 +38,9 @@ export function Header() {
           <li>
             <Link
               href="/"
-              className="hover:text-blue-hover transition-colors duration-300 font-bold"
+              className={`${
+                currentRoute === "/" ? "text-blue-500" : "text-white"
+              } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
               Home
             </Link>
@@ -43,7 +48,9 @@ export function Header() {
           <li>
             <Link
               href="/Register"
-              className="hover:text-blue-hover transition-colors duration-300 font-bold"
+              className={`${
+                currentRoute === "/Register" ? "text-blue-500" : "text-white"
+              } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
               Routes
             </Link>
@@ -51,7 +58,9 @@ export function Header() {
           <li>
             <Link
               href="/Login"
-              className="hover:text-blue-hover transition-colors duration-300 font-bold"
+              className={`${
+                currentRoute === "/Login" ? "text-blue-500" : "text-white"
+              } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
               Login
             </Link>

@@ -31,13 +31,28 @@ export default function Tracking() {
 
   const fetchTrackingData = async (routeCode: string) => {
     try {
+      const routeRef = doc(db, "tracking", routeCode);
+      const routeSnap = await getDoc(routeRef);
+
+      // Revisa si el campo `statusTracking` es "Finished"
+      if (
+        routeSnap.exists() &&
+        routeSnap.data().statusTracking === "Finished"
+      ) {
+        setRouteLocked(false);
+        console.warn("La ruta está finalizada y no se puede mostrar.");
+        setError({ coordinate: "La ruta está finalizada o no existe." });
+        return; // No cargar los datos de la ruta si está finalizada
+      }
+
       const packagesRef = collection(db, "tracking", routeCode, "packages"); // Ruta a la colección de packages dentro de la ruta especificada
       const querySnapshot = await getDocs(packagesRef);
       const dataCollection: any[] = [];
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        const { address, location, number, statusDriver } = data;
+        const { address, location, number, statusDriver, statusTracking } =
+          data;
 
         dataCollection.push({
           address: address || "No address provided",
@@ -49,6 +64,7 @@ export default function Tracking() {
           statusDriver:
             statusDriver !== undefined ? statusDriver : "No status provided",
           uidPackage: doc.id, // Usa el ID del documento como uidPackage
+          statusTracking: statusTracking,
         });
       });
 
@@ -60,7 +76,7 @@ export default function Tracking() {
       }
     } catch (error) {
       console.error("Error al obtener los datos:", error);
-      setError({ coordinate: "Error al obtener los datos de Firestore." });
+      setError({ coordinate: "Error al obtener los datos." });
     }
   };
 

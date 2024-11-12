@@ -230,26 +230,37 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   const handleEntregadoClick = async (index: number) => {
     if (index === currentRouteIndex) {
       const marker = sortedMarkers[index];
+      const markerId = marker.id; // Asegúrate de que `id` corresponde con el campo en Firestore (1, 2, etc.)
+
+      if (!markerId) {
+        console.error("No se encontró el ID del marcador.");
+        return;
+      }
+
       console.log("Entregando marcador:", marker);
 
       const markerRef = doc(db, "tracking", routeCode);
       try {
+        // Usamos el ID del marcador para actualizar el campo correspondiente en Firestore
         await updateDoc(markerRef, {
-          [`${index + 1}.statusDriver`]: "Entregado", // Usar el índice + 1 como campo
+          [`${markerId}.statusDriver`]: "Entregado",
         });
 
+        // Actualizamos el estado local para reflejar el cambio
         setSortedMarkers((prevMarkers) => {
-          const updatedMarkers = [...prevMarkers];
-          updatedMarkers[index] = {
-            ...updatedMarkers[index],
-            statusDriver: "Entregado",
-          };
+          const updatedMarkers = prevMarkers.map((m, i) =>
+            i === index
+              ? { ...m, statusDriver: "Entregado" } // Actualizamos solo el marcador correcto
+              : m
+          );
           return updatedMarkers;
         });
 
+        // Cambiamos al siguiente marcador en la lista, si es aplicable
         const nextIndex = index === sortedMarkers.length - 1 ? 0 : index + 1;
         setCurrentRouteIndex(nextIndex); // Cambiar al siguiente marcador
 
+        // Si tienes un swiperRef, avanza al siguiente slide
         if (swiperRef.current && swiperRef.current.swiper) {
           swiperRef.current.swiper.slideTo(nextIndex);
         }
@@ -421,7 +432,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
           <div>
             {/* Botón de regresar */}
             <Link
-              href="/"
+              href="/tracking"
               className="relative group inline-block p-px font-semibold leading-6 text-white shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
             >
               <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>

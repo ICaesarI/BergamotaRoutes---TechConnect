@@ -10,8 +10,10 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteField,
+  arrayUnion,
 } from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
-import { db } from "@techconnect /src/database/firebaseConfiguration";
+import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
 import LocationMarker from "./LocationMarker";
@@ -21,6 +23,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import { useRouter } from "next/navigation";
 
 interface MarkerData {
   lat: number;
@@ -42,38 +45,66 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   const [reportVisible, setReportVisible] = useState(false); // Estado para el formulario
   const [loading, setLoading] = useState(true); // Estado para el loading
   const swiperRef = useRef<Swiper | null>(null); // Referencia para controlar Swiper
+  const router = useRouter();
+  const [driverUid, setDriverUid] = useState<string>(""); // UID del conductor
 
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
 
-  // Función para obtener los marcadores desde Firestore
   const fetchMarkersFromFirestore = async () => {
     const docRef = doc(db, "tracking", routeCode);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
+      console.log("Obteniendo datos del seguimiento:", data);
       const markers: MarkerData[] = [];
 
-      for (let i = 1; i <= 10; i++) {
-        const item = data[i];
-        if (item) {
-          const { address, location, number, statusDriver } = item;
+      // Obtener los documentos de la colección 'packages'
+      const packagesRef = collection(db, "tracking", routeCode, "packages");
+      const querySnapshot = await getDocs(packagesRef);
+
+      querySnapshot.forEach((doc) => {
+        const packageData = doc.data();
+        const { address, location, statusDriver, uidPackage } = packageData;
+
+        // Filtrar paquetes con statusDriver en "Entregado"
+        if (
+          address &&
+          location &&
+          location.latitude !== undefined &&
+          location.longitude !== undefined &&
+          statusDriver !== "Entregado" // Excluir los paquetes entregados
+        ) {
+          const lat = location.latitude;
+          const lng = location.longitude;
           markers.push({
-            lat: location._lat,
-            lng: location._long,
+            id: uidPackage, // Asigna el UID del paquete como ID
+            lat,
+            lng,
             label: address,
-            number: number,
-            statusDriver: statusDriver,
-            distance: 0, // Se calculará después
+            number: uidPackage,
+            status: statusDriver === "Activo" ? "Activo" : "Inactivo",
+            distance: 0,
           });
         }
-      }
+      });
+
       return markers;
     }
+    console.log("No se encontró el documento de seguimiento");
     return [];
   };
 
   useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      setDriverUid(currentUser.uid);
+    }
+    else {
+      console.log("No hay usuario autenticado");
+      setDriverUid("");
+    }
+
     const initializeMap = async () => {
       if (!mapRef.current) {
         mapRef.current = L.map("map", {
@@ -116,11 +147,13 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       const optimizedRoute = optimizeRoute(userLocation, distances);
       console.log("Ruta optimizada:", optimizedRoute);
 
-      // Filtrar los marcadores con statusDriver "Entregado" (suponiendo que es un valor específico)
+      // Filtrar los marcadores excluyendo aquellos que ya fueron "Entregado" en statusDriver
       const filteredMarkers = optimizedRoute.filter((marker) => {
         console.log(
-          `Marcador ${marker.address} con statusDriver: ${marker.statusDriver}, statusPackage: ${marker.statusPackage}`
+          `Marcador ${marker.label} con statusDriver: ${marker.statusDriver}, statusPackage: ${marker.statusPackage}`
         );
+
+        // Verificación para asegurar que los datos existan y están completos
         if (
           marker.statusDriver === undefined ||
           marker.statusPackage === undefined
@@ -129,12 +162,13 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
             `Marcador con datos faltantes: ${JSON.stringify(marker)}`
           );
         }
-        // Aquí puedes ajustar la lógica para omitir los marcadores según el estado de statusDriver o statusPackage
-        return marker.statusDriver !== "Entregado"; // Cambia "Entregado" según tus necesidades
+
+        // Aquí filtras los marcadores para que solo queden los que no están "Entregado"
+        return marker.statusDriver !== "Entregado";
       });
 
       console.log(
-        "Marcadores después del filtrado (sin 'Entregado' en statusDriver):",
+        "Marcadores después del filtrado (excluyendo 'Entregado' en statusDriver):",
         filteredMarkers
       );
 
@@ -230,7 +264,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   const handleEntregadoClick = async (index: number) => {
     if (index === currentRouteIndex) {
       const marker = sortedMarkers[index];
-      const markerId = marker.id; // Asegúrate de que `id` corresponde con el campo en Firestore (1, 2, etc.)
+      const markerId = marker.id;
 
       if (!markerId) {
         console.error("No se encontró el ID del marcador.");
@@ -239,30 +273,60 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
       console.log("Entregando marcador:", marker);
 
-      const markerRef = doc(db, "tracking", routeCode);
+      const markerRef = doc(db, "tracking", routeCode, "packages", markerId);
+      const trackingRef = doc(db, "tracking", routeCode);
       try {
-        // Usamos el ID del marcador para actualizar el campo correspondiente en Firestore
         await updateDoc(markerRef, {
-          [`${markerId}.statusDriver`]: "Entregado",
+          statusDriver: "Entregado",
         });
 
-        // Actualizamos el estado local para reflejar el cambio
         setSortedMarkers((prevMarkers) => {
           const updatedMarkers = prevMarkers.map((m, i) =>
-            i === index
-              ? { ...m, statusDriver: "Entregado" } // Actualizamos solo el marcador correcto
-              : m
+            i === index ? { ...m, statusDriver: "Entregado" } : m
           );
           return updatedMarkers;
         });
 
-        // Cambiamos al siguiente marcador en la lista, si es aplicable
-        const nextIndex = index === sortedMarkers.length - 1 ? 0 : index + 1;
-        setCurrentRouteIndex(nextIndex); // Cambiar al siguiente marcador
+        // Verifica si es el último marcador
+        if (index === sortedMarkers.length - 1) {
+          // Mueve el UID de la ruta actual a finishedRoutes y elimina actualRoute
+          const driverRef = doc(
+            db,
+            "drivers",
+            driverUid,
+            "routes",
+            "actualRoute"
+          );
+          const finishedRoutesRef = doc(
+            db,
+            "drivers",
+            driverUid,
+            "routes",
+            "finishedRoutes"
+          );
 
-        // Si tienes un swiperRef, avanza al siguiente slide
-        if (swiperRef.current && swiperRef.current.swiper) {
-          swiperRef.current.swiper.slideTo(nextIndex);
+          await updateDoc(driverRef, {
+            routeUID: deleteField(), // Elimina el UID de la ruta de actualRoute
+          });
+
+          await updateDoc(finishedRoutesRef, {
+            routes: arrayUnion(routeCode), // Mueve el UID de la ruta a finishedRoutes
+          });
+
+          await updateDoc(trackingRef, {
+            statusTracking: "Finished",
+          })
+
+          // Redirige a /tracking si es el último marcador
+          router.push("/tracking");
+        } else {
+          // Cambia al siguiente marcador en la lista
+          const nextIndex = index + 1;
+          setCurrentRouteIndex(nextIndex);
+
+          if (swiperRef.current && swiperRef.current.swiper) {
+            swiperRef.current.swiper.slideTo(nextIndex);
+          }
         }
       } catch (error) {
         console.error("Error al actualizar el estado del marcador:", error);
