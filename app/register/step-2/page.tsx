@@ -89,7 +89,7 @@ export default function Step_2() {
       await sendEmailVerification(user);
       alert("Correo de verificación enviado. Revisa tu correo.");
 
-      await setDoc(doc(db, "users", user.uid), {
+      await setDoc(doc(db, "drivers", user.uid), {
         uid: user.uid,
         name: registerData.name,
         lastname: registerData.lastname,

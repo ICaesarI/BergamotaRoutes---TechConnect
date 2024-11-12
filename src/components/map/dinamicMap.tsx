@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
@@ -34,25 +41,40 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
+      console.log("Obteniendo datos del seguimiento:", data);
       const markers: MarkerData[] = [];
 
-      // Recorrer sub-objetos del 1 al 10 y extraer información
-      for (let i = 1; i <= 10; i++) {
-        const item = data[i];
-        if (item) {
-          const { address, location, number, status } = item;
+      // Obtener los documentos de la colección 'packages'
+      const packagesRef = collection(db, "tracking", routeCode  ,"packages");
+      const querySnapshot = await getDocs(packagesRef);
+
+      querySnapshot.forEach((doc) => {
+        const packageData = doc.data();
+        const { address, location, statusDriver, uidPackage } = packageData;
+
+        if (
+          address &&
+          location &&
+          location.latitude !== undefined &&
+          location.longitude !== undefined
+        ) {
+          const lat = location.latitude;
+          const lng = location.longitude;
+          console.log("Obteniendo datos del paquete:", lat + " " + lng);
           markers.push({
-            lat: location._lat,
-            lng: location._long,
+            lat,
+            lng,
             label: address,
-            number: number,
-            status: status ? "Activo" : "Inactivo",
-            distance: 0, // Se calculará después
+            number: uidPackage,
+            status: statusDriver === "Activo" ? "Activo" : "Inactivo", // Ajuste basado en el texto del estado
+            distance: 0, // Se calculará después si es necesario
           });
         }
-      }
+      });
+
       return markers;
     }
+    console.log("No se encontró el documento de seguimiento");
     return [];
   };
 
@@ -88,6 +110,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       userLocationRef.current = userLocation;
 
       const markers = await fetchMarkersFromFirestore();
+      console.log("Datos obtenidos de Firestore:", markers); // Verifica la estructura de los datos
       const distances = markers.map((marker) => ({
         ...marker,
         distance:
@@ -119,7 +142,6 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       }
     };
   }, [routeCode]);
-
   return (
     <>
       {loading && (
