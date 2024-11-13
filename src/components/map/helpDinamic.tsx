@@ -10,10 +10,8 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteField,
-  arrayUnion,
 } from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
-import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
+import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
 import LocationMarker from "./LocationMarker";
@@ -23,14 +21,13 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { useRouter } from "next/navigation";
 
 interface MarkerData {
   lat: number;
   lng: number;
   label: string;
   number: string;
-  statusDriver: string;
+  status: string;
   distance: number;
 }
 
@@ -44,11 +41,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   const [clickedRoutes, setClickedRoutes] = useState<Set<number>>(new Set());
   const [reportVisible, setReportVisible] = useState(false); // Estado para el formulario
   const [loading, setLoading] = useState(true); // Estado para el loading
-  const swiperRef = useRef<Swiper | null>(null); // Referencia para controlar Swiper
-  const router = useRouter();
-  const [driverUid, setDriverUid] = useState<string>(""); // UID del conductor
-
-  const [activeMarker, setActiveMarker] = useState<number | null>(null);
+  const swiperRef = useRef<any>(null); // Referencia para controlar Swiper
 
   const fetchMarkersFromFirestore = async () => {
     const docRef = doc(db, "tracking", routeCode);
@@ -56,55 +49,29 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      console.log("Obteniendo datos del seguimiento:", data);
       const markers: MarkerData[] = [];
 
-      // Obtener los documentos de la colección 'packages'
-      const packagesRef = collection(db, "tracking", routeCode, "packages");
-      const querySnapshot = await getDocs(packagesRef);
-
-      querySnapshot.forEach((doc) => {
-        const packageData = doc.data();
-        const { address, location, statusDriver, uidPackage } = packageData;
-
-        // Filtrar paquetes con statusDriver en "Entregado"
-        if (
-          address &&
-          location &&
-          location.latitude !== undefined &&
-          location.longitude !== undefined &&
-          statusDriver !== "Entregado" // Excluir los paquetes entregados
-        ) {
-          const lat = location.latitude;
-          const lng = location.longitude;
+      // Recorrer sub-objetos del 1 al 10 y extraer información
+      for (let i = 1; i <= 10; i++) {
+        const item = data[i];
+        if (item) {
+          const { address, location, number, status } = item;
           markers.push({
-            id: uidPackage, // Asigna el UID del paquete como ID
-            lat,
-            lng,
+            lat: location._lat,
+            lng: location._long,
             label: address,
-            number: uidPackage,
-            status: statusDriver === "Activo" ? "Activo" : "Inactivo",
-            distance: 0,
+            number: number,
+            status: status ? "Activo" : "Inactivo",
+            distance: 0, // Se calculará después
           });
         }
-      });
-
+      }
       return markers;
     }
-    console.log("No se encontró el documento de seguimiento");
     return [];
   };
 
   useEffect(() => {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      setDriverUid(currentUser.uid);
-    }
-    else {
-      console.log("No hay usuario autenticado");
-      setDriverUid("");
-    }
-
     const initializeMap = async () => {
       if (!mapRef.current) {
         mapRef.current = L.map("map", {
@@ -119,7 +86,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
         }).addTo(mapRef.current);
       }
 
-      // Obtener ubicación del usuario
+      // Obtener ubicación del usuario y los marcadores
       const userLocation = await new Promise<L.LatLng>((resolve, reject) => {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -136,48 +103,18 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       userLocationRef.current = userLocation;
 
       const markers = await fetchMarkersFromFirestore();
-      console.log("Datos obtenidos de Firestore:", markers); // Verifica la estructura de los datos
-
       const distances = markers.map((marker) => ({
         ...marker,
         distance:
           userLocation.distanceTo(L.latLng(marker.lat, marker.lng)) / 1000,
       }));
-
       const optimizedRoute = optimizeRoute(userLocation, distances);
-      console.log("Ruta optimizada:", optimizedRoute);
-
-      // Filtrar los marcadores excluyendo aquellos que ya fueron "Entregado" en statusDriver
-      const filteredMarkers = optimizedRoute.filter((marker) => {
-        console.log(
-          `Marcador ${marker.label} con statusDriver: ${marker.statusDriver}, statusPackage: ${marker.statusPackage}`
-        );
-
-        // Verificación para asegurar que los datos existan y están completos
-        if (
-          marker.statusDriver === undefined ||
-          marker.statusPackage === undefined
-        ) {
-          console.warn(
-            `Marcador con datos faltantes: ${JSON.stringify(marker)}`
-          );
-        }
-
-        // Aquí filtras los marcadores para que solo queden los que no están "Entregado"
-        return marker.statusDriver !== "Entregado";
-      });
-
-      console.log(
-        "Marcadores después del filtrado (excluyendo 'Entregado' en statusDriver):",
-        filteredMarkers
-      );
-
-      setSortedMarkers(filteredMarkers); // Actualizar el estado con los marcadores filtrados
+      setSortedMarkers(optimizedRoute);
 
       // Obtener y dibujar la ruta optimizada
       const routeCoordinates = await fetchRouteFromORS(
         userLocation,
-        filteredMarkers
+        optimizedRoute
       );
       if (routeCoordinates.length > 0) {
         L.polyline(routeCoordinates, { color: "blue", weight: 4 }).addTo(
@@ -198,20 +135,11 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
     };
   }, [routeCode]);
 
-  // Manejar el clic en la ruta
-  const handleRouteClick = (nextIndex: number) => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      try {
-        swiperRef.current.swiper.slideTo(nextIndex);
-      } catch (error) {
-        console.error("Error al actualizar el estado del marcador:", error);
-        console.error(
-          "Error Details:",
-          error instanceof Error ? error.message : error
-        );
-      }
-    } else {
-      console.error("Swiper ref no está disponible o no está inicializado.");
+  const handleRouteClick = (index: number) => {
+    if (index === currentRouteIndex) {
+      setClickedRoutes((prev) => new Set(prev).add(index));
+      setCurrentRouteIndex(index === sortedMarkers.length - 1 ? 0 : index + 1);
+      swiperRef.current?.slideTo(index + 1); // Cambiar el slide automáticamente
     }
   };
 
@@ -230,7 +158,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
     const docRef = doc(db, "issues", dateKey);
     const description = (e.target as any).elements[0].value;
 
-    console.log("Intentando acceder a:", docRef.path);
+    console.log("Intentando acceder a:", docRef.path); // Agregar este log
 
     try {
       const docSnap = await getDoc(docRef);
@@ -256,84 +184,6 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
     }
   };
 
-  // Función para manejar el clic en el marcador
-  const handleMarkerClick = (index: number) => {
-    setActiveMarker((prevIndex) => (prevIndex === index ? null : index));
-  };
-
-  const handleEntregadoClick = async (index: number) => {
-    if (index === currentRouteIndex) {
-      const marker = sortedMarkers[index];
-      const markerId = marker.id;
-
-      if (!markerId) {
-        console.error("No se encontró el ID del marcador.");
-        return;
-      }
-
-      console.log("Entregando marcador:", marker);
-
-      const markerRef = doc(db, "tracking", routeCode, "packages", markerId);
-      const trackingRef = doc(db, "tracking", routeCode);
-      try {
-        await updateDoc(markerRef, {
-          statusDriver: "Entregado",
-        });
-
-        setSortedMarkers((prevMarkers) => {
-          const updatedMarkers = prevMarkers.map((m, i) =>
-            i === index ? { ...m, statusDriver: "Entregado" } : m
-          );
-          return updatedMarkers;
-        });
-
-        // Verifica si es el último marcador
-        if (index === sortedMarkers.length - 1) {
-          // Mueve el UID de la ruta actual a finishedRoutes y elimina actualRoute
-          const driverRef = doc(
-            db,
-            "drivers",
-            driverUid,
-            "routes",
-            "actualRoute"
-          );
-          const finishedRoutesRef = doc(
-            db,
-            "drivers",
-            driverUid,
-            "routes",
-            "finishedRoutes"
-          );
-
-          await updateDoc(driverRef, {
-            routeUID: deleteField(), // Elimina el UID de la ruta de actualRoute
-          });
-
-          await updateDoc(finishedRoutesRef, {
-            routes: arrayUnion(routeCode), // Mueve el UID de la ruta a finishedRoutes
-          });
-
-          await updateDoc(trackingRef, {
-            statusTracking: "Finished",
-          })
-
-          // Redirige a /tracking si es el último marcador
-          router.push("/tracking");
-        } else {
-          // Cambia al siguiente marcador en la lista
-          const nextIndex = index + 1;
-          setCurrentRouteIndex(nextIndex);
-
-          if (swiperRef.current && swiperRef.current.swiper) {
-            swiperRef.current.swiper.slideTo(nextIndex);
-          }
-        }
-      } catch (error) {
-        console.error("Error al actualizar el estado del marcador:", error);
-      }
-    }
-  };
-
   return (
     <>
       {loading && (
@@ -350,8 +200,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       )}
 
       {/* Componente de lista de marcadores en la parte inferior */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 mb-4 p-4 bg-opacity-80 rounded-t-lg bg-gray-800">
-        {/* Mobile View: Swiper Slider */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 mb-4 p-4 bg-opacity-80 rounded-t-lg">
         {sortedMarkers.length > 0 && (
           <div className="block sm:hidden">
             <Swiper
@@ -360,25 +209,28 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
               navigation
               pagination={{ clickable: true }}
               className="swiper-container py-6"
+              onSwiper={(swiper) => (swiperRef.current = swiper)}
             >
               {sortedMarkers.map((marker, index) => (
-                <SwiperSlide key={marker.label}>
+                <SwiperSlide
+                  key={marker.label}
+                  onClick={() => handleRouteClick(index)}
+                >
                   <li
                     className={`relative group inline-block p-px font-semibold leading-6 shadow-2xl cursor-pointer rounded-xl transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95
-                  ${
-                    currentRouteIndex === index
-                      ? "text-yellow-400"
-                      : clickedRoutes.has(index)
-                      ? "text-gray-500"
-                      : "text-white"
-                  }
-                  ${
-                    index !== currentRouteIndex
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
-                `}
-                    onClick={() => setActiveMarker(index)}
+                    ${
+                      currentRouteIndex === index
+                        ? "text-yellow-400"
+                        : clickedRoutes.has(index)
+                        ? "text-gray-500"
+                        : "text-white"
+                    }
+                    ${
+                      index !== currentRouteIndex
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                  `}
                   >
                     <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
                     <span className="relative z-10 block px-4 py-2 rounded-xl bg-gray-950">
@@ -388,29 +240,6 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
                         </span>
                       </div>
                     </span>
-
-                    {/* Botones de acción cuando el marcador está activo */}
-                    {activeMarker === index && (
-                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-md p-2">
-                        <button
-                          className="bg-blue-500 text-white px-4 py-2 rounded mb-2"
-                          onClick={() => {
-                            mapRef.current?.setView(
-                              [marker.lat, marker.lng],
-                              16
-                            );
-                          }}
-                        >
-                          Ver Ubicación
-                        </button>
-                        <button
-                          className="bg-green-500 text-white px-4 py-2 rounded"
-                          onClick={() => handleEntregadoClick(index)}
-                        >
-                          Entregado
-                        </button>
-                      </div>
-                    )}
                   </li>
                 </SwiperSlide>
               ))}
@@ -418,26 +247,25 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
           </div>
         )}
 
-        {/* Desktop View: List of Markers */}
         <ul className="hidden sm:flex flex-wrap items-center justify-center gap-4 py-6">
           {sortedMarkers.map((marker, index) => (
             <li
               key={marker.label}
-              onClick={() => setActiveMarker(index)}
+              onClick={() => handleRouteClick(index)}
               className={`relative group inline-block p-px font-semibold leading-6 shadow-2xl cursor-pointer rounded-xl transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95
-            ${
-              currentRouteIndex === index
-                ? "text-yellow-400"
-                : clickedRoutes.has(index)
-                ? "text-gray-500"
-                : "text-white"
-            }
-            ${
-              index !== currentRouteIndex
-                ? "pointer-events-none opacity-50"
-                : ""
-            }
-          `}
+              ${
+                currentRouteIndex === index
+                  ? "text-yellow-400"
+                  : clickedRoutes.has(index)
+                  ? "text-gray-500"
+                  : "text-white"
+              }
+              ${
+                index !== currentRouteIndex
+                  ? "pointer-events-none opacity-50"
+                  : ""
+              }
+            `}
             >
               <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
               <span className="relative z-10 block px-4 py-2 rounded-xl bg-gray-950">
@@ -447,26 +275,6 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
                   </span>
                 </div>
               </span>
-
-              {/* Botones de acción cuando el marcador está activo */}
-              {activeMarker === index && (
-                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-md p-2">
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded mb-2"
-                    onClick={() => {
-                      mapRef.current?.setView([marker.lat, marker.lng], 16);
-                    }}
-                  >
-                    Ver Ubicación
-                  </button>
-                  <button
-                    className="bg-green-500 text-white px-4 py-2 rounded"
-                    onClick={() => handleEntregadoClick(index)}
-                  >
-                    Entregado
-                  </button>
-                </div>
-              )}
             </li>
           ))}
         </ul>
@@ -496,7 +304,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
           <div>
             {/* Botón de regresar */}
             <Link
-              href="/tracking"
+              href="/"
               className="relative group inline-block p-px font-semibold leading-6 text-white shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
             >
               <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
