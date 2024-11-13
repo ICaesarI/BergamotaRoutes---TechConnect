@@ -100,8 +100,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
     const currentUser = auth.currentUser;
     if (currentUser) {
       setDriverUid(currentUser.uid);
-    }
-    else {
+    } else {
       console.log("No hay usuario autenticado");
       setDriverUid("");
     }
@@ -337,7 +336,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
           await updateDoc(trackingRef, {
             statusTracking: "Finished",
-          })
+          });
 
           // Redirige a /tracking si es el último marcador
           router.push("/tracking");
