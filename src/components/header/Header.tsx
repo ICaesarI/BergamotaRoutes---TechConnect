@@ -68,7 +68,7 @@ export function Header() {
           <li>
             <Link
               href="/register/step-1"
-              className="bg-white text-black-main px-4 py-2 rounded-lg hover:bg-blue-hover hover:text-white transition-colors duration-300 font-bold"
+              className="text-2xl bg-white text-black-main px-5 py-3 rounded-lg hover:bg-blue-hover hover:text-white transition-colors duration-300 font-bold"
             >
               Register
             </Link>
