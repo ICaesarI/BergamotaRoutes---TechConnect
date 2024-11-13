@@ -12,6 +12,7 @@ import {
   updateDoc,
   deleteField,
   arrayUnion,
+  GeoPoint,
 } from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
 import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
@@ -134,6 +135,27 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
         }
       });
       userLocationRef.current = userLocation;
+
+      if (auth.currentUser) {
+        saveUserLocation(auth.currentUser, userLocation);
+      } else {
+        console.log("Usuario no autenticado, no se puede guardar ubicación");
+      }
+
+      async function saveUserLocation(user, userLocation) {
+        try {
+      
+          await updateDoc(doc(db, `drivers/${user.uid}/routes/actualRoute`),
+            { 
+              userLocation: new GeoPoint(userLocation.lat, userLocation.lng) 
+            });
+      
+          console.log("Ubicación guardada exitosamente.");
+        } catch (error) {
+          console.error("Error al guardar la ubicación: ", error);
+        }
+      }      
+
 
       const markers = await fetchMarkersFromFirestore();
       console.log("Datos obtenidos de Firestore:", markers); // Verifica la estructura de los datos
