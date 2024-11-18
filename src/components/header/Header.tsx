@@ -47,12 +47,12 @@ export function Header() {
           </li>
           <li>
             <Link
-              href="/Register"
+              href="/tracking/UserView"
               className={`${
                 currentRoute === "/Register" ? "text-blue-500" : "text-white"
               } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
-              Routes
+              Traking
             </Link>
           </li>
           <li>
