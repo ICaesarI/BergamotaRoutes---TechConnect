@@ -6,11 +6,9 @@ import packageImg from "@techconnect /src/img/packageImg.png";
 import userIcon from "@techconnect /src/img/userIcon.png";
 import birthdayIcon from "@techconnect /src/img/birthdayIcon.png";
 
-
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-
 
 import { validateName } from "@techconnect /src/security/validateName";
 import { validateBirthday } from "@techconnect /src/security/validateBirthdat";
@@ -32,34 +30,21 @@ export default function Step_1() {
     lastname?: string;
     birthday?: string;
     gender?: string;
+    image?: string;
   }>({});
   const [selectedGender, setSelectedGender] = useState("");
 
   const router = useRouter();
   const { updateRegisterData } = useRegister();
 
-  // Manejo de la carga de imágenes
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && validateImage(file)) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-        setErrors((prev) => ({ ...prev, image: null })); // Limpia errores si la imagen es válida
-      };
-    } else {
-      setErrors((prev) => ({
-        ...prev,
-        image:
-          "Formato de imagen no válido. Por favor sube una imagen en formato JPG, PNG o GIF.",
-      }));
-    }
+  const handleImageChange = (image: string | null) => {
+    setProfileImage(image);
   };
 
   // Manejo de la selección de género
   const handleGenderSelect = (gender: string) => {
     setSelectedGender(gender);
-    setErrors((prev) => ({ ...prev, gender: null })); // Limpia el error de género cuando se selecciona uno
+    setErrors((prev) => ({ ...prev, gender: undefined })); // Limpia el error de género cuando se selecciona uno
   };
 
   // Manejo del clic en el botón "Siguiente"
@@ -69,6 +54,7 @@ export default function Step_1() {
       lastname?: string;
       birthday?: string;
       gender?: string;
+      image?: string;
     } = {};
 
     if (!validateName(name)) {
@@ -87,13 +73,23 @@ export default function Step_1() {
       newErrors.gender = "El género es requerido";
     }
 
+    if (!profileImage) {
+      newErrors.image = "La imagen es requerida";
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     setErrors({});
-    updateRegisterData({ name, lastname, birthday, selectedGender });
+    updateRegisterData({
+      name,
+      lastname,
+      birthday,
+      selectedGender,
+      profileImage,
+    });
     router.push("/register/step-2");
   };
 
@@ -190,13 +186,11 @@ export default function Step_1() {
             )}
           </div>
           {/* Subir foto */}
-          <PhotoUpload
-            profileImage={profileImage}
-            handleImageUpload={handleImageUpload}
-          />
+          {/* Subir foto */}
+          <PhotoUpload onImageChange={handleImageChange} />
           {errors.image && (
             <p className="text-red-500 text-sm">{errors.image}</p>
-          )}{" "}
+          )}
           {/* Mostrar error de imagen */}
         </div>
         {/* Selección de género */}

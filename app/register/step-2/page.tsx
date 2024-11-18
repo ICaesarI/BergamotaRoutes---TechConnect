@@ -19,6 +19,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { useRegister } from "@techconnect /src/components/context/registerContext";
+import {
+  getStorage,
+  ref,
+  uploadString,
+  getDownloadURL,
+} from "firebase/storage";
 
 import {
   createUserWithEmailAndPassword,
@@ -27,51 +33,41 @@ import {
 
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import { doc, setDoc } from "firebase/firestore";
+import PhotoUpload from "@techconnect /src/components/photoUpload";
 
 export default function Step_2() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [errors, setErrors] = useState({
-    email: "",
-    password: "",
-    passwordConfirm: "",
-    phoneNumber: "",
-  });
-
+  const [errors, setErrors] = useState({});
   const router = useRouter();
   const { registerData, updateRegisterData } = useRegister();
 
-  const handleBack = () => {
-    router.push("/register/step-1");
-  };
+  const handleBack = () => router.push("/register/step-1");
 
   const handleNext = async () => {
-    const newErrors = {
-      email: "",
-      password: "",
-      passwordConfirm: "",
-      phoneNumber: "",
-    };
+    const validationErrors = {};
 
     if (!validateEmail(email)) {
-      newErrors.email = "El email es inválido";
+      validationErrors.email = "El email es inválido";
     }
 
     if (!validatePasswordInput(password)) {
-      newErrors.password =
-        "La contraseña es inválida, debe tener una longitud mínima de 8 caracteres y máxima de 30 caracteres, al menos una letra minúscula y mayúscula, mínimo un número y un carácter especial como [ $&! ].";
-    }
-    if (password !== passwordConfirm) {
-      newErrors.passwordConfirm = "Las contraseñas no coinciden";
-    }
-    if (!validatePhoneNumber(phoneNumber)) {
-      newErrors.phoneNumber = "El número de teléfono es inválido";
+      validationErrors.password =
+        "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
     }
 
-    if (Object.keys(newErrors).filter((key) => newErrors[key]).length > 0) {
-      setErrors(newErrors);
+    if (password !== passwordConfirm) {
+      validationErrors.passwordConfirm = "Las contraseñas no coinciden";
+    }
+
+    if (!validatePhoneNumber(phoneNumber)) {
+      validationErrors.phoneNumber = "El número de teléfono es inválido";
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
@@ -87,19 +83,25 @@ export default function Step_2() {
       const user = userCredential.user;
 
       await sendEmailVerification(user);
-      alert("Correo de verificación enviado. Revisa tu correo.");
 
-      await setDoc(doc(db, "drivers", user.uid), {
-        uid: user.uid,
-        name: registerData.name,
-        lastname: registerData.lastname,
-        email: email,
-        password: password,
-        phoneNumber: phoneNumber,
-        birthday: registerData.birthday,
-        selectedGender: registerData.selectedGender,
-        createdAt: new Date(),
-      });
+      if (registerData.profileImage) {
+        const storage = getStorage();
+        const storageRef = ref(
+          storage,
+          `driversProfilePictures/${user.uid}/profileImage.jpg`
+        );
+        await uploadString(storageRef, registerData.profileImage, "data_url");
+        const imageUrl = await getDownloadURL(storageRef);
+
+        await setDoc(doc(db, "request", user.uid), {
+          ...registerData,
+          uid: user.uid,
+          email,
+          phoneNumber,
+          profileImage: imageUrl,
+          createdAt: new Date(),
+        });
+      }
 
       router.push("/register/step-3");
     } catch (error) {

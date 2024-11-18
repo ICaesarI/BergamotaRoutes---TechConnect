@@ -13,6 +13,7 @@ const config: Config = {
       colors: {
         "black-main": "#111926",
         "blue-hover": "#77c3fa",
+        "blue-bg": "#4264d0",
         "gray-main": "#878a9a",
         "green-bold": "#4e6260",
         "green-grass": "#55ad59",

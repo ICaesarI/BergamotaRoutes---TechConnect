@@ -189,6 +189,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
     initializeMap();
 
+
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();

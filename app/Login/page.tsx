@@ -1,38 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@techconnect /src/database/firebaseConfiguration";
+import { signInUser } from "@techconnect /src/components/signInUser";
 import { useRouter } from "next/navigation";
 
-export default function Login() {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Previene el comportamiento por defecto del formulario
     try {
-      // Autenticación de usuario con Firebase
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-
-      // Verifica si el email está verificado
-      if (user.emailVerified) {
-        router.push("/");
-      } else {
-        setError(
-          "Tu cuenta no está verificada. Por favor, revisa tu correo electrónico."
-        );
-      }
-    } catch (error: any) {
-      setError("Correo electrónico o contraseña incorrectos. Por favor, intenta nuevamente.");
+      setError(""); // Resetea errores previos
+      const user = await signInUser(email, password);
+      console.log("Inicio de sesión exitoso:", user);
+      router.push("/"); // Redirecciona a la página dashboard
+      
+    } catch (err: any) {
+      setError("Contraseña o Correo son incorrectos");
     }
   };
 
@@ -103,7 +91,10 @@ export default function Login() {
                 Remember me
               </label>
             </div>
-            <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-500 hover:underline"
+            >
               Forgot Password?
             </Link>
           </div>
@@ -118,7 +109,10 @@ export default function Login() {
 
         <p className="mt-4 text-sm text-center text-gray-600">
           New User?{" "}
-          <Link href="/register/step-1" className="text-blue-500 hover:underline">
+          <Link
+            href="/register/step-1"
+            className="text-blue-500 hover:underline"
+          >
             Sign Up
           </Link>
         </p>
