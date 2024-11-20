@@ -58,23 +58,23 @@ export default function Step_1() {
     } = {};
 
     if (!validateName(name)) {
-      newErrors.name = "El nombre es inválido";
+      newErrors.name = "The name is invalid";
     }
 
     if (!validateName(lastname)) {
-      newErrors.lastname = "El apellido es inválido";
+      newErrors.lastname = "The last name is invalid";
     }
 
     if (!validateBirthday(birthday)) {
-      newErrors.birthday = "La fecha de nacimiento es requerida";
+      newErrors.birthday = "The birthday is required";
     }
 
     if (!selectedGender) {
-      newErrors.gender = "El género es requerido";
+      newErrors.gender = "The gender is required";
     }
 
     if (!profileImage) {
-      newErrors.image = "La imagen es requerida";
+      newErrors.image = "The image is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -95,7 +95,7 @@ export default function Step_1() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      {/* Columna izquierda */}
+      {/* Left Column */}
       <div className="bg-gray-main flex flex-col justify-between items-center p-6">
         <div className="flex flex-col gap-10">
           <Logo />
@@ -127,18 +127,19 @@ export default function Step_1() {
         <Image src={packageImg} alt="Package Image" width={250} height={250} />
       </div>
 
-      {/* Columna derecha */}
+      {/* Right Column */}
       <div className="bg-white p-8 flex flex-col justify-between h-screen">
         <h1 className="text-3xl font-bold mb-6 text-center md:text-left">
           Sign up and start optimizing your path to faster, more efficient
           destinations!
         </h1>
-        {/* Inputs en una cuadrícula */}
+
+        {/* Input Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Nombre */}
+          {/* Name */}
           <div>
             <InputField
-              label="Nombre:"
+              label="Name:"
               placeholder="Enter your name"
               icon={userIcon}
               value={name}
@@ -146,10 +147,9 @@ export default function Step_1() {
             />
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
-            )}{" "}
-            {/* Mostrar error */}
+            )}
           </div>
-          {/* Apellido */}
+          {/* Last Name */}
           <div>
             <InputField
               label="Last Name:"
@@ -160,10 +160,9 @@ export default function Step_1() {
             />
             {errors.lastname && (
               <p className="text-red-500 text-sm">{errors.lastname}</p>
-            )}{" "}
-            {/* Mostrar error */}
+            )}
           </div>
-          {/* Fecha de nacimiento */}
+          {/* Birthday */}
           <div>
             <h1 className="font-bold text-xl">Birthday:</h1>
             <div className="flex items-center bg-gray-main p-3 rounded-lg">
@@ -182,27 +181,26 @@ export default function Step_1() {
               />
             </div>
             {errors.birthday && (
-              <p className="text-red-500 text-sm">{errors.birthday}</p> // Mostrar error
+              <p className="text-red-500 text-sm">{errors.birthday}</p>
             )}
           </div>
-          {/* Subir foto */}
-          {/* Subir foto */}
+          {/* Upload Photo */}
           <PhotoUpload onImageChange={handleImageChange} />
           {errors.image && (
             <p className="text-red-500 text-sm">{errors.image}</p>
           )}
-          {/* Mostrar error de imagen */}
         </div>
-        {/* Selección de género */}
+
+        {/* Gender Selection */}
         <GenderSelection
           selectedGender={selectedGender}
           handleGenderSelect={handleGenderSelect}
         />
         {errors.gender && (
           <p className="text-red-500 text-sm">{errors.gender}</p>
-        )}{" "}
-        {/* Mostrar error de género */}
-        {/* Botón de siguiente */}
+        )}
+
+        {/* Next Button */}
         <div className="flex justify-end mt-8">
           <button
             onClick={handleNextClick}

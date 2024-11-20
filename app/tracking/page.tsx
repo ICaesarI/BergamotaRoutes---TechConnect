@@ -143,7 +143,7 @@ export default function Tracking() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 p-5">
       <div>
-        {/* Input y botón deshabilitados si la ruta ya está asignada */}
+        {/* Input and button disabled if the route is already assigned */}
         <div className="m-3 flex flex-col justify-between">
           <InputField
             label="Enter route code"
@@ -162,18 +162,18 @@ export default function Tracking() {
             } text-white font-bold py-2 px-4 rounded`}
             disabled={routeLocked}
           >
-            {routeLocked ? "Ruta Asignada" : "Agregar Ruta"}
+            {routeLocked ? "Route Assigned" : "Add Route"}
           </button>
           {error.coordinate && (
             <p className="text-red-500 text-sm">{error.coordinate}</p>
           )}
         </div>
 
-        {/* Mostrar datos de la ruta automáticamente si está bloqueada */}
+        {/* Display route data automatically if it is locked */}
         {trackingData.length > 0 && (
           <div className="mt-6">
             <h2 className="text-lg font-bold text-gray-700 mb-3">
-              Información de la Ruta:
+              Route Information:
             </h2>
             <TrackingList trackingData={trackingData} />
             <div className="mt-4 flex justify-end">
@@ -182,7 +182,7 @@ export default function Tracking() {
                 className="codepen-button mt-4 w-2/4 text-center"
                 onClick={startRoute}
               >
-                <span>Iniciar ruta</span>
+                <span>Start Route</span>
               </Link>
             </div>
           </div>

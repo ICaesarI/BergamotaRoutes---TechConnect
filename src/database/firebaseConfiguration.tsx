@@ -1,18 +1,16 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDgio8VdOEbYglA4zOoCkP3uleS4xzxqLU", // Clave de API web
-  authDomain: "bergamotaroutesoficial.firebaseapp.com", // Asegúrate de que este dominio sea correcto
-  projectId: "bergamotaroutesoficial", // ID del proyecto
-  storageBucket: "bergamotaroutesoficial.appspot.com", // Asegúrate de que este bucket sea correcto
-  messagingSenderId: "192843768390", // Número de proyecto
-  appId: "1:192843768390:web:41dc8e0b470c069b200026" // Debe ser el correcto
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
-
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);

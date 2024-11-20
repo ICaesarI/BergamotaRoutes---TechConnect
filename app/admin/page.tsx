@@ -15,6 +15,8 @@ import { db, auth } from "@techconnect /src/database/firebaseConfiguration"; // 
 import paisaje from "@techconnect /src/img/PaisajeAdmin.webp";
 import adminPanel from "@techconnect /src/img/admin-panel.png";
 import adminIcon from "@techconnect /src/img/adminIcon.png";
+import requestIcon from "@techconnect /src/img/ask-question.png";
+import alertIcon from "@techconnect /src/img/notification.png";
 
 import { useRouter } from "next/navigation";
 
@@ -116,7 +118,7 @@ export default function Admin() {
     <div className="grid grid-cols-1 md:grid-cols-3 h-auto gap-4 p-4">
       {/* Left Side */}
       <div className="md:col-span-2 space-y-6">
-        {/* Sección de bienvenida */}
+        {/* Welcome Section */}
         <div
           className="relative bg-blue-500 p-6 text-white flex items-center justify-between rounded-lg overflow-hidden"
           style={{
@@ -128,9 +130,9 @@ export default function Admin() {
           <div className="absolute inset-0 bg-blue-500/60"></div>
           <div className="relative z-10 space-y-2">
             <h1 className="text-xl sm:text-2xl font-bold">
-              Bienvenido, {userData?.name || "Admin"}
+              Welcome, {userData?.name || "Admin"}
             </h1>
-            <p className="text-sm sm:text-base">Have a good day</p>
+            <p className="text-sm sm:text-base">Have a great day</p>
           </div>
           <div className="relative z-10">
             <Image
@@ -143,15 +145,15 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Sección de estadísticas */}
+        {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Total Errores */}
+          {/* Total Errors */}
           <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-red-500 hover:bg-red-500 group">
             <div className="flex items-center space-x-4">
               <div className="w-3 h-3 bg-red-500 rounded-full group-hover:bg-white"></div>
               <div>
                 <p className="text-lg font-medium text-gray-800 group-hover:text-white">
-                  Total Errores
+                  Total Errors
                 </p>
                 <p className="text-red-500 font-bold text-xl group-hover:text-white">
                   {totalErrors}
@@ -160,13 +162,13 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Total Conductores */}
+          {/* Total Drivers */}
           <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-green-500 hover:bg-green-500 group cursor-pointer">
             <div className="flex items-center space-x-4">
               <div className="w-3 h-3 bg-green-500 rounded-full group-hover:bg-white"></div>
               <div>
                 <p className="text-lg font-medium text-gray-800 group-hover:text-white">
-                  Total Conductores
+                  Total Drivers
                 </p>
                 <p className="text-green-500 font-bold text-xl group-hover:text-white">
                   {totalDrivers}
@@ -175,7 +177,7 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Nuevas Solicitudes */}
+          {/* New Requests */}
           <div
             className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-blue-500 hover:bg-blue-500 group cursor-pointer"
             onClick={() => router.push("/admin/request")}
@@ -184,7 +186,7 @@ export default function Admin() {
               <div className="w-3 h-3 bg-blue-500 rounded-full group-hover:bg-white"></div>
               <div>
                 <p className="text-lg font-medium text-gray-800 group-hover:text-white">
-                  Nuevas Solicitudes
+                  New Requests
                 </p>
                 <p className="text-blue-500 font-bold text-xl group-hover:text-white">
                   {totalRequest}
@@ -194,19 +196,19 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Último Issue */}
+        {/* Latest Issue */}
         <div>
           {lastIssue ? (
             <div className="bg-red-50 p-6 rounded-xl shadow-md hover:scale-105 transition">
               <h1 className="text-xl sm:text-2xl font-semibold mb-4">
-                Último Issue
+                Latest Issue
               </h1>
               <div className="bg-red-100 p-4 rounded-lg">
                 <h2 className="text-lg font-bold text-red-700">
                   {lastIssue.description}
                 </h2>
                 <p className="text-gray-700 mt-2">
-                  <strong>Fecha:</strong>{" "}
+                  <strong>Date:</strong>{" "}
                   {new Date(
                     lastIssue.createdAt.seconds * 1000
                   ).toLocaleString()}
@@ -214,24 +216,35 @@ export default function Admin() {
               </div>
             </div>
           ) : (
-            <p className="text-gray-600 font-medium">
-              No hay issues registrados.
-            </p>
+            <div className="flex flex-col gap-5">
+              <p className="text-blue-600 font-bold text-left">
+                No New Issues.
+              </p>
+              <div className="flex justify-center">
+                <Image
+                  src={alertIcon}
+                  width={200}
+                  height={200}
+                  alt="Request Icon"
+                />
+              </div>
+            </div>
           )}
         </div>
-        {/* Último Request */}
+
+        {/* Latest Request */}
         <div>
           {lastRequest ? (
             <div className="bg-blue-50 p-6 rounded-xl shadow-md hover:scale-105 transition">
               <h1 className="text-xl sm:text-2xl font-semibold mb-4">
-                Último Request
+                Latest Request
               </h1>
               <div className="bg-blue-100 p-4 rounded-lg">
                 <h2 className="text-lg font-bold text-blue-700">
                   {lastRequest.name} {lastRequest.lastname}
                 </h2>
                 <p className="text-gray-700 mt-2">
-                  <strong>Fecha:</strong>{" "}
+                  <strong>Date:</strong>{" "}
                   {new Date(
                     lastRequest.createdAt.seconds * 1000
                   ).toLocaleString()}
@@ -239,7 +252,19 @@ export default function Admin() {
               </div>
             </div>
           ) : (
-            <p className="text-gray-600 font-medium">No hay Request Nuevos.</p>
+            <div className="flex flex-col gap-5">
+              <p className="text-blue-600 font-bold text-left">
+                No New Requests.
+              </p>
+              <div className="flex justify-center">
+                <Image
+                  src={requestIcon}
+                  width={200}
+                  height={200}
+                  alt="Request Icon"
+                />
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -276,15 +301,15 @@ export default function Admin() {
                   {driver.name} {driver.lastname}
                 </h2>
                 <p>Email: {driver.email}</p>
-                <p>Teléfono: {driver.phoneNumber}</p>
+                <p>Phone: {driver.phoneNumber}</p>
                 <p>
-                  Registrado el:{" "}
+                  Registered on:{" "}
                   {new Date(driver.createdAt.seconds * 1000).toLocaleString()}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-gray-600">No hay conductores recientes.</p>
+            <p className="text-gray-600">No recent drivers.</p>
           )}
         </div>
       </div>

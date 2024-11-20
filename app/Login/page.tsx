@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signInUser } from "@techconnect /src/components/signInUser";
 import { useRouter } from "next/navigation";
@@ -8,42 +8,67 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // Cargar el email desde localStorage si existe
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); // Previene el comportamiento por defecto del formulario
+    e.preventDefault();
+    setError(""); // Resetea errores previos
     try {
-      setError(""); // Resetea errores previos
       const user = await signInUser(email, password);
       console.log("Inicio de sesión exitoso:", user);
-      router.push("/"); // Redirecciona a la página dashboard
-      
+
+      // Guardar el email si "Remember me" está marcado
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+
+      router.push("/"); // Redirecciona a la página principal
     } catch (err: any) {
-      setError("Contraseña o Correo son incorrectos");
+      switch (err.message) {
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+          setError("Correo o contraseña incorrectos.");
+          break;
+        default:
+          setError("Error al iniciar sesión. Intenta nuevamente.");
+          break;
+      }
     }
   };
 
   return (
     <div className="flex min-h-screen">
-      {/* Sección izquierda con el mapa */}
+      {/* Left section with the map */}
       <div className="flex-1 relative bg-gray-800">
         <div className="absolute inset-0 flex items-center justify-center text-white text-center">
           <h1 className="text-7xl font-bold">
-            Your time is valuable, optimize every kilometer with us
+            Your time is valuable. Optimize every kilometer with us.
           </h1>
         </div>
       </div>
 
-      {/* Sección derecha con el formulario de login */}
+      {/* Right section with the login form */}
       <div className="flex-1 bg-white p-8 flex flex-col justify-center">
         <h2 className="text-3xl font-bold mb-4">Log In</h2>
         <p className="text-sm text-gray-600 mb-6">
-          Welcome, optimize your journeys, save time and always reach your
-          destination in the most efficient way.
+          Welcome! Optimize your journeys, save time, and always reach your
+          destination efficiently.
         </p>
 
-        {/* Formulario de login con validación */}
+        {/* Login form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label
@@ -59,7 +84,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="mt-1 p-4 border border-gray-300 rounded-lg w-full"
-              placeholder="ejemplo@correo.com"
+              placeholder="example@domain.com"
             />
           </div>
 
@@ -81,12 +106,18 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Mostrar mensajes de error si existen */}
+          {/* Display error messages if any */}
           {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
             <div>
-              <input type="checkbox" id="remember" className="mr-2" />
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="mr-2"
+              />
               <label htmlFor="remember" className="text-sm text-gray-600">
                 Remember me
               </label>

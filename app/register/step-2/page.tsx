@@ -50,20 +50,20 @@ export default function Step_2() {
     const validationErrors = {};
 
     if (!validateEmail(email)) {
-      validationErrors.email = "El email es inválido";
+      validationErrors.email = "The email is invalid";
     }
 
     if (!validatePasswordInput(password)) {
       validationErrors.password =
-        "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
+        "The password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.";
     }
 
     if (password !== passwordConfirm) {
-      validationErrors.passwordConfirm = "Las contraseñas no coinciden";
+      validationErrors.passwordConfirm = "Passwords do not match";
     }
 
     if (!validatePhoneNumber(phoneNumber)) {
-      validationErrors.phoneNumber = "El número de teléfono es inválido";
+      validationErrors.phoneNumber = "The phone number is invalid";
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -97,6 +97,7 @@ export default function Step_2() {
           ...registerData,
           uid: user.uid,
           email,
+          password,
           phoneNumber,
           profileImage: imageUrl,
           createdAt: new Date(),

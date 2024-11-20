@@ -24,7 +24,9 @@ const CrearPaquete = () => {
   const [codigoPostal, setCodigoPostal] = useState("");
   const [calle, setCalle] = useState("");
   const [numeroCalle, setNumeroCalle] = useState("");
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [number, setNumber] = useState("");
   const [showRoute, setShowRoute] = useState(false);
   const [step, setStep] = useState("Pendiente");
@@ -91,7 +93,9 @@ const CrearPaquete = () => {
         setStep("Pendiente");
         setMessage("El paquete aún no ha comenzado su ruta");
       } else {
-        console.error("No se pudieron obtener las coordenadas de la dirección.");
+        console.error(
+          "No se pudieron obtener las coordenadas de la dirección."
+        );
       }
     } catch (e) {
       console.error("Error al agregar el paquete: ", e);
@@ -100,24 +104,29 @@ const CrearPaquete = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sección izquierda con recuadro del producto */}
+      {/* Left section with product box */}
       <div className="flex-1 flex items-center justify-center bg-gray-200 p-4">
         <div className="w-1/2 h-1/2 border border-gray-500 rounded-lg flex items-center justify-center p-2">
-          <p className="text-gray-600 text-center text-sm">Imagen del Producto</p>
+          <p className="text-gray-600 text-center text-sm">Product Image</p>
         </div>
       </div>
 
-      {/* Sección derecha con formulario de compra */}
+      {/* Right section with purchase form */}
       <div className="flex-1 bg-white p-4 flex flex-col justify-center">
-        <h2 className="text-2xl font-bold mb-2 text-center">Formulario de Ejemplo de Compra</h2>
+        <h2 className="text-2xl font-bold mb-2 text-center">
+          Sample Purchase Form
+        </h2>
         <p className="text-xs text-gray-600 mb-4 text-center">
-          Completa los datos del pedido para pasarlo a la base de datos.
+          Fill in the order details to save them in the database.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-2">
           <div>
-            <label htmlFor="nombre" className="text-center block text-xs font-medium text-gray-700">
-              Nombre
+            <label
+              htmlFor="nombre"
+              className="text-center block text-xs font-medium text-gray-700"
+            >
+              Name
             </label>
             <input
               type="text"
@@ -130,8 +139,11 @@ const CrearPaquete = () => {
           </div>
 
           <div>
-            <label htmlFor="descripcion" className="text-center block text-xs font-medium text-gray-700">
-              Descripción
+            <label
+              htmlFor="descripcion"
+              className="text-center block text-xs font-medium text-gray-700"
+            >
+              Description
             </label>
             <input
               type="text"
@@ -144,8 +156,11 @@ const CrearPaquete = () => {
           </div>
 
           <div>
-            <label htmlFor="peso" className="text-center block text-xs font-medium text-gray-700">
-              Peso
+            <label
+              htmlFor="peso"
+              className="text-center block text-xs font-medium text-gray-700"
+            >
+              Weight
             </label>
             <input
               type="text"
@@ -158,8 +173,11 @@ const CrearPaquete = () => {
           </div>
 
           <div>
-            <label htmlFor="direccion" className="text-center block text-xs font-medium text-gray-700">
-            Dirección
+            <label
+              htmlFor="direccion"
+              className="text-center block text-xs font-medium text-gray-700"
+            >
+              Address
             </label>
             <input
               type="text"
@@ -173,8 +191,11 @@ const CrearPaquete = () => {
 
           <div className="flex space-x-2">
             <div className="w-1/2">
-              <label htmlFor="colonia" className="text-center block text-xs font-medium text-gray-700">
-                Colonia
+              <label
+                htmlFor="colonia"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                Neighborhood
               </label>
               <input
                 type="text"
@@ -186,8 +207,11 @@ const CrearPaquete = () => {
               />
             </div>
             <div className="w-1/2">
-              <label htmlFor="number" className="text-center block text-xs font-medium text-gray-700">
-                Número de Calle
+              <label
+                htmlFor="number"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                Street Number
               </label>
               <input
                 type="number"
@@ -202,8 +226,11 @@ const CrearPaquete = () => {
 
           <div className="flex space-x-2">
             <div className="w-1/2">
-              <label htmlFor="estado" className="text-center block text-xs font-medium text-gray-700">
-                Estado
+              <label
+                htmlFor="estado"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                State
               </label>
               <input
                 type="text"
@@ -215,8 +242,11 @@ const CrearPaquete = () => {
               />
             </div>
             <div className="w-1/2">
-              <label htmlFor="pais" className="text-center block text-xs font-medium text-gray-700">
-                País
+              <label
+                htmlFor="pais"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                Country
               </label>
               <input
                 type="text"
@@ -231,8 +261,11 @@ const CrearPaquete = () => {
 
           <div className="flex space-x-2">
             <div className="w-1/2">
-              <label htmlFor="ciudad" className="text-center block text-xs font-medium text-gray-700">
-                Ciudad
+              <label
+                htmlFor="ciudad"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                City
               </label>
               <input
                 type="text"
@@ -244,8 +277,11 @@ const CrearPaquete = () => {
               />
             </div>
             <div className="w-1/2">
-              <label htmlFor="codigoPostal" className="text-center block text-xs font-medium text-gray-700">
-                Código Postal
+              <label
+                htmlFor="codigoPostal"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                Postal Code
               </label>
               <input
                 type="text"
@@ -262,7 +298,7 @@ const CrearPaquete = () => {
             type="submit"
             className="w-full bg-black text-white p-2 rounded hover:bg-gray-700 transition-colors duration-300 font-semibold text-sm text-center"
           >
-            Realizar Compra
+            Make Purchase
           </button>
         </form>
       </div>
