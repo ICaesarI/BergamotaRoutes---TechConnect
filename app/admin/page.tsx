@@ -18,6 +18,8 @@ import adminIcon from "@techconnect /src/img/adminIcon.png";
 import requestIcon from "@techconnect /src/img/ask-question.png";
 import alertIcon from "@techconnect /src/img/notification.png";
 
+import { checkAdmin } from "@techconnect /src/components/utils/checkAdmins";
+
 import { useRouter } from "next/navigation";
 
 import Image from "next/image";
@@ -30,6 +32,7 @@ export default function Admin() {
   const [recentDrivers, setRecentDrivers] = useState([]);
   const [lastIssue, setLastIssue] = useState(null);
   const [lastRequest, setLastRequest] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
@@ -39,12 +42,26 @@ export default function Admin() {
       if (user) {
         try {
           const { uid } = user;
+
           // Obtener datos del administrador
           const adminDocRef = doc(db, "admin", uid);
           const adminDoc = await getDoc(adminDocRef);
 
-          if (adminDoc.exists()) {
+          if (adminDoc.exists() && adminDoc.data().role === "admin") {
+            // Si el usuario es un admin, mostramos los datos
             setUserData(adminDoc.data());
+            fetchData();
+          } else {
+            // Si el usuario no es admin, redirigimos
+            router.push("/no-access"); // Ruta a una página de acceso denegado o página de inicio
+          }
+
+          // Obtener datos del administrador
+          const adminValidationRef = doc(db, "admin", uid);
+          const adminValidationDoc = await getDoc(adminValidationRef);
+
+          if (adminValidationDoc.exists()) {
+            setUserData(adminValidationDoc.data());
           } else {
             console.warn("Usuario no encontrado en la colección 'admins'");
           }
@@ -53,6 +70,7 @@ export default function Admin() {
         }
       } else {
         console.warn("No hay usuario autenticado");
+        router.push("/error");
       }
     });
 
@@ -113,6 +131,11 @@ export default function Admin() {
 
     return () => unsubscribe(); // Limpiar listener al desmontar el componente
   }, []);
+
+  // Si no hay permisos, la página no se renderiza
+  if (!userData) {
+    return null; // No mostrar nada si no es un administrador o no hay usuario autenticado
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 h-auto gap-4 p-4">

@@ -8,6 +8,7 @@ import { getAuth, signOut } from "firebase/auth"; // Importa el método para cer
 import { getFirestore, doc, getDoc } from "firebase/firestore"; // Importa Firestore
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export function AdminHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +17,7 @@ export function AdminHeader() {
   const [adminData, setAdminData] = useState(null); // Para almacenar los datos del admin logueado
 
   const toggleMenu = () => setIsOpen(!isOpen);
+  const route = useRouter();
   const currentRoute = usePathname(); // Obtenemos la ruta actual
 
   const handleProfileClick = (e) => {
@@ -61,6 +63,7 @@ export function AdminHeader() {
     try {
       await signOut(auth); // Cerrar sesión
       setShowProfile(false); // Cierra el perfil después de cerrar sesión
+      route.push("/Login");
     } catch (error) {
       console.error("Error signing out: ", error);
     }

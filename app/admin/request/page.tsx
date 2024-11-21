@@ -3,16 +3,19 @@
 import React, { useEffect, useState } from "react";
 import {
   collection,
+  getDoc,
   getDocs,
   deleteDoc,
   doc,
   setDoc,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
 import { deleteUser } from "firebase/auth";
 import { Password } from "@mui/icons-material";
 import desertImage from "@techconnect /src/img/desert.png"; // Make sure the path is correct.
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface RequestData {
   uid: string;
@@ -26,9 +29,33 @@ interface RequestData {
 
 const RequestsList: React.FC = () => {
   const [requests, setRequests] = useState<RequestData[]>([]);
+  const [user, setUser] = useState<any>(null); // Estado para guardar los datos del usuario
+  const [loading, setLoading] = useState<boolean>(true); // Estado para manejar el estado de carga
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const router = useRouter();
 
-  // Fetch documents from the "request" collection
+  // Verificar el estado de autenticación del usuario
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Usuario autenticado, obtener su rol
+        const userRef = doc(db, "admin", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+        setUser(user); // Guardamos el usuario autenticado
+      } else {
+        // Usuario no autenticado
+        setIsAdmin(false);
+        setUser(null);
+      }
+      setLoading(false); // Terminar el estado de carga
+    });
+
     const fetchRequests = async () => {
       const querySnapshot = await getDocs(collection(db, "request"));
       const requestData: RequestData[] = querySnapshot.docs.map((doc) => ({
@@ -37,8 +64,21 @@ const RequestsList: React.FC = () => {
       })) as RequestData[];
       setRequests(requestData);
     };
+
     fetchRequests();
+    return () => unsubscribe(); // Limpiar el listener al desmontar el componente
   }, []);
+
+  // Mientras se esté cargando la autenticación, no hacer nada (puedes mostrar un loader si lo prefieres)
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // Redirigir si no hay usuario autenticado
+  if (!user) {
+    router.push("/error");
+    return null; // Redirige si no está autenticado
+  }
 
   // Function to reject a user (delete from "request" and Firebase Auth)
   const handleReject = async (uid: string) => {
@@ -77,6 +117,7 @@ const RequestsList: React.FC = () => {
         profileImage: request.profileImage,
         createdAt: new Date(),
       });
+
       // Create a new document in the "users" collection
       await setDoc(doc(db, "users", uid), {
         name: request.name,

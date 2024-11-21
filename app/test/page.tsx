@@ -64,7 +64,7 @@ const CrearPaquete = () => {
 
         // Cambié "package" por "packages" y no uso paqueteId como ID de documento
         await setDoc(
-          doc(db, `tracking/64OGdO4ukuB89f6TWHpl/packages/${paqueteId}`),
+          doc(db, `tracking/XXVxhxoKcqfmX3vEHg8u/packages/${paqueteId}`),
           {
             address: fullAddress,
             location: new GeoPoint(coordinates.lat, coordinates.lng),

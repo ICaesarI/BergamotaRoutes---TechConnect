@@ -45,7 +45,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       const markers: MarkerData[] = [];
 
       // Obtener los documentos de la colección 'packages'
-      const packagesRef = collection(db, "tracking", routeCode  ,"packages");
+      const packagesRef = collection(db, "tracking", routeCode, "packages");
       const querySnapshot = await getDocs(packagesRef);
 
       querySnapshot.forEach((doc) => {

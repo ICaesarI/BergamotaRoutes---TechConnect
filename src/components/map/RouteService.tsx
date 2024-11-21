@@ -1,7 +1,9 @@
-import L from "leaflet";
+"use client";
 
-const API_KEY = "5b3ce3597851110001cf624899fc548b5f4045d09133e855f8a2a9b9"; // Sustituye con tu clave de OpenRouteService
-const ORS_URL = "https://api.openrouteservice.org/v2/directions/driving-car";
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+const ORS_URL = process.env.NEXT_PUBLIC_ORS_URL;
+
+import L from "leaflet";
 
 // Función para decodificar la geometría de la ruta
 const decodePolyline = (polyline: string): [number, number][] => {
@@ -64,16 +66,16 @@ export const fetchRouteFromORS = async (
       }),
     });
 
+    const textResponse = await response.text();
+    console.log("Raw API Response:", textResponse);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Error fetching route: ${errorData.message}`);
+      console.error(`HTTP Error: ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${textResponse}`);
     }
 
-    const data = await response.json();
-    console.log("API Response:", data);
-    if (data.routes.length > 0) {
-      console.log("First Route:", data.routes[0]);
-    }
+    const data = JSON.parse(textResponse);
+    console.log("Parsed API Response:", data);
 
     if (!data.routes || data.routes.length === 0 || !data.routes[0].geometry) {
       console.error("No valid route found or geometry is undefined.");

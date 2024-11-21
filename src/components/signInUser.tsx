@@ -1,10 +1,15 @@
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../database/firebaseConfiguration";
 
 export async function signInUser(email: string, password: string) {
   try {
-    // Inicia sesión con Firebase Auth
+    // Validación de entrada
+    if (!email || !password) {
+      throw new Error("El correo y la contraseña son obligatorios.");
+    }
+
+    // Autenticar al usuario
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
@@ -12,15 +17,17 @@ export async function signInUser(email: string, password: string) {
     );
     const user = userCredential.user;
 
-    // Verifica si el correo está confirmado
-    if (!user.emailVerified) {
-      throw new Error(
-        "Por favor, confirma tu correo electrónico antes de continuar."
-      );
-    }
+    console.log("Usuario autenticado con UID:", user.uid);
 
-    // Verifica si el usuario existe en la colección `users`
+    // if (!user.emailVerified) {
+    //   throw new Error(
+    //     "Por favor, confirma tu correo electrónico antes de continuar."
+    //   );
+    // }
+
+    // Verificar el documento en Firestore
     const userDocRef = doc(db, "users", user.uid);
+    console.log("UID: " + user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (!userDoc.exists()) {
@@ -29,9 +36,11 @@ export async function signInUser(email: string, password: string) {
       );
     }
 
-    // Si todo está bien, regresa el usuario autenticado
-    return user;
-  } catch (error) {
+    console.log("Documento de usuario encontrado:", userDoc.data());
+
+    return { user, userData: userDoc.data() };
+  } catch (error: any) {
+    console.error("Error al iniciar sesión:", error.message || error.code);
     throw new Error(error.message || "Error al iniciar sesión.");
   }
 }
