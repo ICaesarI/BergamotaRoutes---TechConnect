@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import MapComponent from '@techconnect /src/components/map/dinamicMap';
+import MapComponent from "@techconnect /src/components/map/clientMap";
 import { db } from "@techconnect /src/database/firebaseConfiguration";
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from "firebase/firestore";
+import { error } from "console";
 
 const PackageTracking = () => {
   const [trackingCode, setTrackingCode] = useState("");
@@ -44,10 +45,11 @@ const PackageTracking = () => {
 
   return (
     <div className="my-10 mx-10 mb-10 mt-10 p-6 bg-white shadow-lg rounded-lg">
-      {/* Header */}
       <div className="text-center mb-4">
         <h2 className="text-3xl font-bold">Rastrear</h2>
-        <h3 className="text-2xl text-gray-400 font-semibold">Ingresa el código del producto</h3>
+        <h3 className="text-2xl text-gray-400 font-semibold">
+          Ingresa el código del producto
+        </h3>
       </div>
 
       {/* Mostrar el formulario solo si el código no ha sido ingresado */}
@@ -62,12 +64,12 @@ const PackageTracking = () => {
               type="text"
               value={trackingCode}
               onChange={(e) => setTrackingCode(e.target.value)}
-              className="w-full p-2 rounded-lg border mt-2"
+              className="w-full p-2 rounded-lg border-2 border-transparent mt-2 bg-gray-100 outline-none transition-all duration-500 hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-300"
               placeholder="Escriba aquí su código..."
             />
             <button
               onClick={handleTrack}
-              className="w-full bg-blue-500 text-white text-sm rounded-lg my-2 py-2 mt-4 hover:bg-blue-600"
+              className="w-full bg-blue-500 text-white font-bold text-sm py-2 px-4 mt-2 rounded-md shadow-md transition-all duration-100 active:translate-y-1 active:shadow-none"
             >
               Buscar
             </button>
@@ -80,13 +82,22 @@ const PackageTracking = () => {
         <div className="bg-gray-100 p-4 flex flex-col justify-between rounded-lg shadow-inner">
           {status ? (
             <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-center text-xl font-semibold">Estado del Pedido</h3>
-              <p className="mt-4"><strong>Estado:</strong> {status.step}</p>
+              <h3 className="text-center text-xl font-semibold">
+                Estado del Pedido
+              </h3>
+              <p>ID rastreo: {trackingCode}</p>
+              <p className="mt-4">
+                <strong>Estado:</strong> {status.step}
+              </p>
               <p>{status.message}</p>
               {status.showRoute ? (
                 <div className="mt-4">
-                  <h4 className="text-lg font-semibold mb-2">Ruta del pedido:</h4>
-                  <MapComponent showRoute={status.showRoute} />
+                  <h4 className="text-lg font-semibold mb-2">
+                    Ruta del pedido:
+                  </h4>
+                  {status.showRoute && (
+                    <MapComponent trackingCode={trackingCode} />
+                  )}
                 </div>
               ) : (
                 <div className="text-center text-gray-600 mt-4">
@@ -95,7 +106,9 @@ const PackageTracking = () => {
               )}
             </div>
           ) : (
-            <div className="text-center text-gray-500">Introduce un código de seguimiento para ver el estado del paquete.</div>
+            <div className="text-center text-gray-500">
+              Introduce un código de seguimiento para ver el estado del paquete.
+            </div>
           )}
         </div>
       )}

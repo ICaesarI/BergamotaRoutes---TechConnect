@@ -143,18 +143,15 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
       async function saveUserLocation(user, userLocation) {
         try {
-      
-          await updateDoc(doc(db, `drivers/${user.uid}/routes/actualRoute`),
-            { 
-              userLocation: new GeoPoint(userLocation.lat, userLocation.lng) 
-            });
-      
+          await updateDoc(doc(db, `drivers/${user.uid}/routes/actualRoute`), {
+            userLocation: new GeoPoint(userLocation.lat, userLocation.lng),
+          });
+
           console.log("Ubicación guardada exitosamente.");
         } catch (error) {
           console.error("Error al guardar la ubicación: ", error);
         }
-      }      
-
+      }
 
       const markers = await fetchMarkersFromFirestore();
       console.log("Datos obtenidos de Firestore:", markers); // Verifica la estructura de los datos
@@ -167,6 +164,18 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
       const optimizedRoute = optimizeRoute(userLocation, distances);
       console.log("Ruta optimizada:", optimizedRoute);
+
+      if (optimizedRoute.length > 0) {
+        const firstMarker = optimizedRoute[0];
+       
+          const packageRef = doc(db, "paquetesPrueba", firstMarker.id);
+          try {
+            await updateDoc(packageRef, { showRoute: true, step:"En camino", message:"El repartidor se dirige a tu domicilio"});
+            console.log(`showRoute actualizado a true para el paquete: ${firstMarker.id}`);
+          } catch (error) {
+            console.error("Error al actualizar showRoute:", error);
+          }
+      }
 
       // Filtrar los marcadores excluyendo aquellos que ya fueron "Entregado" en statusDriver
       const filteredMarkers = optimizedRoute.filter((marker) => {
@@ -208,6 +217,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
       setLoading(false);
     };
+
 
     initializeMap();
 
@@ -287,73 +297,92 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
     if (index === currentRouteIndex) {
       const marker = sortedMarkers[index];
       const markerId = marker.id;
-
+  
       if (!markerId) {
         console.error("No se encontró el ID del marcador.");
         return;
       }
-
+  
       console.log("Entregando marcador:", marker);
-
+      
+      const markerRef2 = doc(db, "paquetesPrueba", markerId);
+      
+      try {
+        // Actualiza el estado del marcador actual en la base de datos
+        await updateDoc(markerRef2, {
+          step: "Entregado",
+          message: "Tu pedido fue entregado",
+          showRoute: false
+        });
+      }catch (error) {
+          console.error("Error al actualizar el estado del marcador:", error);
+        }
+  
       const markerRef = doc(db, "tracking", routeCode, "packages", markerId);
       const trackingRef = doc(db, "tracking", routeCode);
+      
       try {
+        // Actualiza el estado del marcador actual en la base de datos
         await updateDoc(markerRef, {
           statusDriver: "Entregado",
         });
-
+  
+        // Actualiza el estado local de los marcadores
         setSortedMarkers((prevMarkers) => {
           const updatedMarkers = prevMarkers.map((m, i) =>
             i === index ? { ...m, statusDriver: "Entregado" } : m
           );
+  
+          // Si hay un siguiente marcador, establece showRoute: true
+          if (index + 1 < updatedMarkers.length) {
+            updatedMarkers[index + 1].showRoute = true;
+          }
+  
           return updatedMarkers;
         });
-
+  
         // Verifica si es el último marcador
         if (index === sortedMarkers.length - 1) {
           // Mueve el UID de la ruta actual a finishedRoutes y elimina actualRoute
-          const driverRef = doc(
-            db,
-            "drivers",
-            driverUid,
-            "routes",
-            "actualRoute"
-          );
-          const finishedRoutesRef = doc(
-            db,
-            "drivers",
-            driverUid,
-            "routes",
-            "finishedRoutes"
-          );
-
+          const driverRef = doc(db, "drivers", driverUid, "routes", "actualRoute");
+          const finishedRoutesRef = doc(db, "drivers", driverUid, "routes", "finishedRoutes");
+  
           await updateDoc(driverRef, {
             routeUID: deleteField(), // Elimina el UID de la ruta de actualRoute
           });
-
+  
           await updateDoc(finishedRoutesRef, {
             routes: arrayUnion(routeCode), // Mueve el UID de la ruta a finishedRoutes
           });
-
+  
           await updateDoc(trackingRef, {
             statusTracking: "Finished",
           });
-
+  
           // Redirige a /tracking si es el último marcador
           router.push("/tracking");
         } else {
           // Cambia al siguiente marcador en la lista
           const nextIndex = index + 1;
           setCurrentRouteIndex(nextIndex);
-
+  
           if (swiperRef.current && swiperRef.current.swiper) {
             swiperRef.current.swiper.slideTo(nextIndex);
           }
+  
+          // Actualiza showRoute en la base de datos para el siguiente marcador
+          const nextMarkerId = sortedMarkers[nextIndex].id;
+          const nextMarkerRef = doc(db, "paquetesPrueba", nextMarkerId);
+          await updateDoc(nextMarkerRef, {
+            showRoute: true,
+            step: "En camino",
+            message: "El driver se dirige a tu domicilio"
+          });
         }
       } catch (error) {
         console.error("Error al actualizar el estado del marcador:", error);
-      }
-    }
+      }
+    }
   };
 
   return (

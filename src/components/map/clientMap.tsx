@@ -2,23 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
 import { fetchRouteFromORS } from "./RouteService";
 import LocationMarker from "./LocationMarker";
 import OtherMarkers from "./OtherMarkers";
 import DisplayLoader from "../loader";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
 
 interface MarkerData {
   lat: number;
@@ -29,133 +19,196 @@ interface MarkerData {
   distance: number;
 }
 
-const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
+const MapComponent: React.FC<{ trackingCode: string }> = ({ trackingCode }) => {
+  console.log("Tracking Code recibido:", trackingCode);
   const mapRef = useRef<L.Map | null>(null);
-  const userLocationRef = useRef<L.LatLng | null>(null);
+  const userLocationRef = useRef<L.LatLng | null>(null);  // Ubicación del paquete
+  const driverLocationRef = useRef<L.LatLng | null>(null);  // Ubicación del conductor
   const [sortedMarkers, setSortedMarkers] = useState<MarkerData[]>([]);
   const [loading, setLoading] = useState(true);
-  
 
-  //Ubicacion del Driver de la base de datos
-  
+  // Función para obtener la ubicación del conductor
+  const fetchDriverLocation = async (driverUID: string) => {
+    try {
+      const idRef = doc(db, "drivers", driverUID, "routes", "actualRoute");
+      const idDoc = await getDoc(idRef);
 
-  //Ubicacion del cliente de la base de datos
+      if (!idDoc.exists()) {
+        console.error("No se encontró el documento de la ruta del conductor.");
+        return null;
+      }
 
+      const idData = idDoc.data();
+      const driverLocation = idData?.userLocation;
 
-//   const fetchMarkersFromFirestore = async () => {
-//     const docRef = doc(db, "paquetesPruebas", routeCode);
-//     const docSnap = await getDoc(docRef);
+      if (!driverLocation) {
+        console.error("No se encontró la ubicación del conductor.");
+        return null;
+      }
 
-//     if (docSnap.exists()) {
-//       const data = docSnap.data();
-//       console.log("Obteniendo datos del seguimiento:", data);
-//       const markers: MarkerData[] = [];
+      console.log("Ubicación del conductor:", driverLocation);
+      return {
+        location: L.latLng(driverLocation.latitude, driverLocation.longitude),
+        label: "Driver",
+      };
+    } catch (error) {
+      console.error("Error obteniendo la ubicación del conductor:", error);
+      return null;
+    }
+  };
 
-//       // Obtener los documentos de la colección 'packages'
-//       const packagesRef = collection(db, "tracking", routeCode  ,"packages");
-//       const querySnapshot = await getDocs(packagesRef);
+  const findRouteByTrackingCode = async (trackingCode: string) => {
+    try {
+      const trackingRef = collection(db, "tracking");
+      const routesSnapshot = await getDocs(trackingRef);
 
-//       querySnapshot.forEach((doc) => {
-//         const packageData = doc.data();
-//         const { address, location, statusDriver, uidPackage } = packageData;
+      for (const routeDoc of routesSnapshot.docs) {
+        const routeId = routeDoc.id;
+        const packageRef = doc(db, "tracking", routeId, "packages", trackingCode);
+        const packageDoc = await getDoc(packageRef);
 
-//         if (
-//           address &&
-//           location &&
-//           location.latitude !== undefined &&
-//           location.longitude !== undefined
-//         ) {
-//           const lat = location.latitude;
-//           const lng = location.longitude;
-//           console.log("Obteniendo datos del paquete:", lat + " " + lng);
-//           markers.push({
-//             lat,
-//             lng,
-//             label: address,
-//             number: uidPackage,
-//             status: statusDriver === "Activo" ? "Activo" : "Inactivo", // Ajuste basado en el texto del estado
-//             distance: 0, // Se calculará después si es necesario
-//           });
-//         }
-//       });
+        if (packageDoc.exists()) {
+          console.log(`Ruta encontrada: ${routeId}`);
+          return routeId;
+        }
+      }
 
-//       return markers;
-//     }
-//     console.log("No se encontró el documento de seguimiento");
-//     return [];
-//   };
+      console.log("No se encontró una ruta para el código de seguimiento.");
+      return null;
+    } catch (error) {
+      console.error("Error buscando la ruta:", error);
+      return null;
+    }
+  };
+
+  const fetchPackageLocation = async (trackingCode: string) => {
+    try {
+      const foundRouteCode = await findRouteByTrackingCode(trackingCode);
+      if (!foundRouteCode) {
+        console.error("No se encontró la ruta para el cliente.");
+        return [];
+      }
+
+      const routeRef = doc(db, "tracking", foundRouteCode);
+      const routeDoc = await getDoc(routeRef);
+
+      if (!routeDoc.exists()) {
+        console.error("No se encontró el documento de la ruta.");
+        return [];
+      }
+
+      const routeData = routeDoc.data();
+      const driverUID = routeData?.driverUID;
+
+      if (!driverUID) {
+        console.error("No se encontró el ID del conductor en la ruta.");
+        return [];
+      }
+
+      console.log("ID del conductor:", driverUID);
+
+      // Obtener la ubicación del conductor
+      const driverLocation = await fetchDriverLocation(driverUID);
+      if (!driverLocation) {
+        return [];
+      }
+
+      driverLocationRef.current = driverLocation.location;
+
+      const packageRef = doc(db, "tracking", foundRouteCode, "packages", trackingCode);
+      const packageDoc = await getDoc(packageRef);
+
+      if (!packageDoc.exists()) {
+        console.error("No se encontró el documento del paquete.");
+        return [];
+      }
+
+      const packageData = packageDoc.data();
+      const { location, address, uidPackage } = packageData;
+
+      if (!location || location.latitude === undefined || location.longitude === undefined) {
+        console.error("Los datos del paquete no tienen coordenadas válidas.");
+        return [];
+      }
+
+      userLocationRef.current = L.latLng(location.latitude, location.longitude);
+      console.log('Ubicacion del paquete ' + userLocationRef.current)
+      return [
+        // {
+        //   lat: userLocationRef.current.lat,
+        //   lng: userLocationRef.current.lng,
+        //   label: address || "Package",
+        //   number: uidPackage || "",
+        //   status: "Paquete",
+        // },
+        {
+          lat: driverLocation.location.lat,
+          lng: driverLocation.location.lng,
+          label: driverLocation.label || "Driver",
+          number: driverUID || "",
+          status: "Conductor",
+        },
+      ];
+    } catch (error) {
+      console.error("Error obteniendo la ubicación del paquete:", error);
+      return [];
+    }
+  };
 
   useEffect(() => {
-    const initializeMap = async () => {
-      if (!mapRef.current) {
-        mapRef.current = L.map("map", {
-          center: [20.639, -103.312], // Coordenadas iniciales
-          zoom: 10,
-        });
-
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(mapRef.current);
-      }
-
-      // Obtener ubicación del usuario y los marcadores
-      const userLocation = await new Promise<L.LatLng>((resolve, reject) => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const { latitude, longitude } = position.coords;
-              resolve(L.latLng(latitude, longitude));
-            },
-            (error) => reject(error)
-          );
-        } else {
-          reject(new Error("Geolocation not supported"));
+    const initializeMapWithRoute = async () => {
+      try {
+        const markers = await fetchPackageLocation(trackingCode);
+  
+        if (!markers || markers.length === 0) {
+          console.error("No se encontraron marcadores");
+          setLoading(false);
+          return;
         }
-      });
-      userLocationRef.current = userLocation;
-
-      const markers = await fetchMarkersFromFirestore();
-      console.log("Datos obtenidos de Firestore:", markers); // Verifica la estructura de los datos
-      const distances = markers.map((marker) => ({
-        ...marker,
-        distance:
-          userLocation.distanceTo(L.latLng(marker.lat, marker.lng)) / 1000,
-      }));
-      const optimizedRoute = optimizeRoute(userLocation, distances);
-      setSortedMarkers(optimizedRoute);
-
-      // Obtener y dibujar la ruta optimizada
-      const routeCoordinates = await fetchRouteFromORS(
-        userLocation,
-        optimizedRoute
-      );
-      if (routeCoordinates.length > 0) {
-        L.polyline(routeCoordinates, { color: "blue", weight: 4 }).addTo(
-          mapRef.current!
+  
+        // Asumimos que siempre habrá dos marcadores: paquete y conductor
+        const distances = markers.map((marker) => ({
+          ...marker,
+          distance: userLocationRef.current?.distanceTo(L.latLng(marker.lat, marker.lng)) / 1000,
+        }));
+        const optimizedRoute = optimizeRoute(userLocationRef.current, distances);
+        setSortedMarkers(optimizedRoute);
+  
+        // Obtener las coordenadas de la ruta desde ORS
+        const routeCoordinates = await fetchRouteFromORS(
+          userLocationRef.current,
+          optimizedRoute
         );
+  
+        if (routeCoordinates.length > 0) {
+          L.polyline(routeCoordinates, { color: "blue", weight: 4 }).addTo(mapRef.current!);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error inicializando el mapa con la ruta:", error);
+        setLoading(false);
       }
-
-      setLoading(false);
     };
-
-    initializeMap();
-
+  
+    if (!mapRef.current) {
+      const map = L.map("map").setView([20.639, -103.312], 10);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+      mapRef.current = map;
+    }
+  
+    initializeMapWithRoute();
+  
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, [routeCode]);
+  }, [trackingCode]);
+  
+
   return (
     <>
-      {loading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 h-screen z-50">
-          <DisplayLoader />
-        </div>
-      )}
       <div id="map" className="h-screen w-full relative z-0" />
       <OtherMarkers markers={sortedMarkers} map={mapRef.current} />
       {userLocationRef.current && (

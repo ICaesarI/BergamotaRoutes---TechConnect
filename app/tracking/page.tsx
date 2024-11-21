@@ -34,65 +34,6 @@ export default function Tracking() {
   // Estado para controlar la carga de la página
   const [isUserChecked, setIsUserChecked] = useState(false);
 
-  useEffect(() => {
-    // Verificar si el usuario está autenticado y si existe en la base de datos
-    const checkUserInDatabase = async () => {
-      if (!user) {
-        router.push("/login"); // Redirige a la página de login si no hay usuario
-        return;
-      }
-
-      try {
-        const userRef = doc(db, "users", user.uid); // Verifica si el usuario está en la colección 'users'
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-          // Si el usuario no está en la tabla 'users', redirige a otra página
-          console.log("Usuario no encontrado en la base de datos.");
-          router.push("/no-access"); // Redirige a una página de error o acceso denegado
-          return;
-        }
-        // Si el usuario existe en la base de datos, cambiar el estado a true para cargar la página
-        setIsUserChecked(true);
-      } catch (error) {
-        console.error("Error al verificar el usuario:", error);
-        setError({ coordinate: "Error al verificar el usuario." });
-        setIsUserChecked(true); // También aseguramos que la página cargue en caso de error
-      }
-    };
-
-    const checkExistingRoute = async () => {
-      if (user) {
-        try {
-          const driverRouteRef = doc(
-            db,
-            `drivers/${user.uid}/routes/actualRoute`
-          );
-          const routeSnap = await getDoc(driverRouteRef);
-
-          if (routeSnap.exists() && routeSnap.data().routeUID) {
-            const existingRouteUID = routeSnap.data().routeUID;
-            setRouteCode(existingRouteUID); // Establece el código de ruta automáticamente
-            setRouteLocked(true); // Bloquea el campo para evitar cambios
-            fetchTrackingData(existingRouteUID); // Cargar automáticamente la información de la ruta
-          }
-        } catch (error) {
-          console.error("Error al verificar la ruta actual:", error);
-          setError({ coordinate: "Error al verificar la ruta actual." });
-        }
-      }
-    };
-
-    checkExistingRoute();
-    checkUserInDatabase();
-    
-  }, [user, router]); // Ejecuta la verificación cuando el usuario o router cambien
-
-  // Si la verificación del usuario no ha terminado, no renderizar nada
-  if (!isUserChecked) {
-    return null; // No renderizar nada mientras se verifica
-  }
-
   const fetchTrackingData = async (routeCode: string) => {
     try {
       const routeRef = doc(db, "tracking", routeCode);
@@ -156,6 +97,64 @@ export default function Tracking() {
       setError({ coordinate: "Error al obtener los datos." });
     }
   };
+
+  useEffect(() => {
+    // Verificar si el usuario está autenticado y si existe en la base de datos
+    const checkUserInDatabase = async () => {
+      if (!user) {
+        router.push("/login"); // Redirige a la página de login si no hay usuario
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", user.uid); // Verifica si el usuario está en la colección 'users'
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          // Si el usuario no está en la tabla 'users', redirige a otra página
+          console.log("Usuario no encontrado en la base de datos.");
+          router.push("/no-access"); // Redirige a una página de error o acceso denegado
+          return;
+        }
+        // Si el usuario existe en la base de datos, cambiar el estado a true para cargar la página
+        setIsUserChecked(true);
+      } catch (error) {
+        console.error("Error al verificar el usuario:", error);
+        setError({ coordinate: "Error al verificar el usuario." });
+        setIsUserChecked(true); // También aseguramos que la página cargue en caso de error
+      }
+    };
+
+    const checkExistingRoute = async () => {
+      if (user) {
+        try {
+          const driverRouteRef = doc(
+            db,
+            `drivers/${user.uid}/routes/actualRoute`
+          );
+          const routeSnap = await getDoc(driverRouteRef);
+
+          if (routeSnap.exists() && routeSnap.data().routeUID) {
+            const existingRouteUID = routeSnap.data().routeUID;
+            setRouteCode(existingRouteUID); // Establece el código de ruta automáticamente
+            setRouteLocked(true); // Bloquea el campo para evitar cambios
+            fetchTrackingData(existingRouteUID); // Cargar automáticamente la información de la ruta
+          }
+        } catch (error) {
+          console.error("Error al verificar la ruta actual:", error);
+          setError({ coordinate: "Error al verificar la ruta actual." });
+        }
+      }
+    };
+
+    checkExistingRoute();
+    checkUserInDatabase();
+  }, [user, router]); // Ejecuta la verificación cuando el usuario o router cambien
+
+  // Si la verificación del usuario no ha terminado, no renderizar nada
+  if (!isUserChecked) {
+    return null; // No renderizar nada mientras se verifica
+  }
 
   // Función para iniciar la ruta y actualizar tanto el documento de la ruta como el del driver
   const startRoute = async () => {

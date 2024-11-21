@@ -66,7 +66,7 @@ export default function Step_1() {
     }
 
     if (!validateBirthday(birthday)) {
-      newErrors.birthday = "The birthday is required";
+      newErrors.birthday = "The birthday is invalid";
     }
 
     if (!selectedGender) {
@@ -91,6 +91,20 @@ export default function Step_1() {
       profileImage,
     });
     router.push("/register/step-2");
+  };
+
+  // Calcula la fecha mínima (por ejemplo, hace 120 años)
+  const getMinDate = () => {
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 80);
+    return minDate.toISOString().split("T")[0]; // Formato "YYYY-MM-DD"
+  };
+
+  // Calcula la fecha máxima (debe ser mayor de 18 años)
+  const getMaxDate = () => {
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() - 18);
+    return maxDate.toISOString().split("T")[0];
   };
 
   return (
@@ -178,12 +192,15 @@ export default function Step_1() {
                 className="bg-transparent outline-none flex-1 text-white"
                 required
                 onChange={(e) => setBirthday(e.target.value)}
+                min={getMinDate()} // Establecer el mínimo
+                max={getMaxDate()} // Establecer el máximo
               />
             </div>
             {errors.birthday && (
               <p className="text-red-500 text-sm">{errors.birthday}</p>
             )}
           </div>
+
           {/* Upload Photo */}
           <PhotoUpload onImageChange={handleImageChange} />
           {errors.image && (

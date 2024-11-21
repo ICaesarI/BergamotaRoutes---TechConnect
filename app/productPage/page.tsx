@@ -67,7 +67,7 @@ const CrearPaquete = () => {
         });
 
         await setDoc(
-          doc(db, `tracking/64OGdO4ukuB89f6TWHpl/packages/${paqueteId}`),
+          doc(db, `tracking/9V2pmqZC2zNqxjRBuHOO/packages/${paqueteId}`),
           {
             address: fullAddress,
             location: new GeoPoint(coordinates.lat, coordinates.lng),
