@@ -19,12 +19,6 @@ export async function signInUser(email: string, password: string) {
 
     console.log("Usuario autenticado con UID:", user.uid);
 
-    // if (!user.emailVerified) {
-    //   throw new Error(
-    //     "Por favor, confirma tu correo electrónico antes de continuar."
-    //   );
-    // }
-
     // Verificar el documento en Firestore
     const userDocRef = doc(db, "users", user.uid);
     console.log("UID: " + user.uid);

@@ -134,13 +134,6 @@ const MapComponent: React.FC<{ trackingCode: string }> = ({ trackingCode }) => {
       userLocationRef.current = L.latLng(location.latitude, location.longitude);
       console.log('Ubicacion del paquete ' + userLocationRef.current)
       return [
-        // {
-        //   lat: userLocationRef.current.lat,
-        //   lng: userLocationRef.current.lng,
-        //   label: address || "Package",
-        //   number: uidPackage || "",
-        //   status: "Paquete",
-        // },
         {
           lat: driverLocation.location.lat,
           lng: driverLocation.location.lng,
@@ -189,23 +182,38 @@ const MapComponent: React.FC<{ trackingCode: string }> = ({ trackingCode }) => {
         setLoading(false);
       }
     };
-  
+
     if (!mapRef.current) {
       const map = L.map("map").setView([20.639, -103.312], 10);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
       mapRef.current = map;
     }
-  
+
+    // Ejecutar la actualización cada 30 segundos
+    const intervalId = setInterval(() => {
+      // Primero, limpiamos el mapa
+      mapRef.current?.eachLayer((layer) => {
+        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+          mapRef.current?.removeLayer(layer);
+        }
+      });
+
+      // Luego, volvemos a inicializar el mapa con la nueva ubicación
+      initializeMapWithRoute();
+    }, 30000); // 30000 milisegundos = 30 segundos
+
+    // Llamar a la función una vez al inicio
     initializeMapWithRoute();
-  
+
+    // Limpiar el intervalo cuando el componente se desmonte
     return () => {
+      clearInterval(intervalId);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
   }, [trackingCode]);
-  
 
   return (
     <>

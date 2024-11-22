@@ -154,6 +154,7 @@ export default function Step_2() {
           <div className="flex items-center bg-gray-main p-3 rounded-lg">
             <InputField
               label=""
+              type="email"
               placeholder="Enter your email address"
               icon={emailIcon}
               value={email}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import cameraIcon from "@techconnect /src/img/cameraIcon.png"
 import { useState } from "react";
 
 const PhotoUpload = ({ onImageChange }) => {
@@ -30,10 +31,10 @@ const PhotoUpload = ({ onImageChange }) => {
           />
         ) : (
           <Image
-            src="/img/cameraIcon.png"
+            src={cameraIcon}
             alt="Camera Icon"
-            width={30}
-            height={30}
+            width={40}
+            height={40}
           />
         )}
         <input

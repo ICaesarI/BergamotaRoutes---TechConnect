@@ -44,7 +44,7 @@ const PackageTracking = () => {
   };
 
   return (
-    <div className="my-10 mx-10 mb-10 mt-10 p-6 bg-white shadow-lg rounded-lg">
+    <div className="min-h-screen items-center justify-center my-10 mx-10 mb-10 mt-10 p-6 bg-white shadow-lg rounded-lg">
       <div className="text-center mb-4">
         <h2 className="text-3xl font-bold">Rastrear</h2>
         <h3 className="text-2xl text-gray-400 font-semibold">
@@ -55,7 +55,7 @@ const PackageTracking = () => {
       {/* Mostrar el formulario solo si el código no ha sido ingresado */}
       {!isCodeEntered && (
         <div className="bg-white p-8">
-          <div className="flex flex-col items-center">
+          <div className="flex items-center">
             {/* Aquí podrías agregar un icono o imagen */}
           </div>
           <div className="mt-6 mx-16">
@@ -101,7 +101,7 @@ const PackageTracking = () => {
                 </div>
               ) : (
                 <div className="text-center text-gray-600 mt-4">
-                  El pedido aún no ha comenzado su ruta.
+                  El pedido esta {status.step}
                 </div>
               )}
             </div>
