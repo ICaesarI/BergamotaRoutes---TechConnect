@@ -148,6 +148,7 @@ export default function Admin() {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Total Errors */}
+          <a href="admin/errors" id="ref">
           <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-red-500 hover:bg-red-500 group">
             <div className="flex items-center space-x-4">
               <div className="w-3 h-3 bg-red-500 rounded-full group-hover:bg-white"></div>
@@ -161,8 +162,10 @@ export default function Admin() {
               </div>
             </div>
           </div>
+          </a>
 
           {/* Total Drivers */}
+          <a href="admin/drivers" id="ref">
           <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-green-500 hover:bg-green-500 group cursor-pointer">
             <div className="flex items-center space-x-4">
               <div className="w-3 h-3 bg-green-500 rounded-full group-hover:bg-white"></div>
@@ -176,6 +179,7 @@ export default function Admin() {
               </div>
             </div>
           </div>
+          </a>
 
           {/* New Requests */}
           <div

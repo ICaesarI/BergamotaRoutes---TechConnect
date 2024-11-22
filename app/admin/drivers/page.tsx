@@ -13,7 +13,7 @@ export default function UserReports() {
     const fetchUserReports = async () => {
       try {
         const usersQuery = query(
-          collection(db, "request"),
+          collection(db, "drivers"),
           orderBy("createdAt", "desc")
         );
         const usersSnapshot = await getDocs(usersQuery);
@@ -33,7 +33,7 @@ export default function UserReports() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">New Request</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">Drivers</h1>
       <div className="my-6 flex justify-center">
         <a
           href="/admin"
@@ -55,8 +55,7 @@ export default function UserReports() {
               <th className="border border-gray-300 px-4 py-2">Apellido</th>
               <th className="border border-gray-300 px-4 py-2">Correo</th>
               <th className="border border-gray-300 px-4 py-2">Teléfono</th>
-              <th className="border border-gray-300 px-4 py-2">Fecha de Nacimiento</th>
-              <th className="border border-gray-300 px-4 py-2">Género</th>
+              <th className="border border-gray-300 px-4 py-2">Contraseña</th>
             </tr>
           </thead>
           <tbody>
@@ -66,8 +65,7 @@ export default function UserReports() {
                 <td className="border border-gray-300 px-4 py-2 text-center">{user.lastname}</td>
                 <td className="border border-gray-300 px-4 py-2 text-center">{user.email}</td>
                 <td className="border border-gray-300 px-4 py-2 text-center">{user.phoneNumber}</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">{user.birthday}</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">{user.selectedGender}</td>
+                <td className="border border-gray-300 px-4 py-2 text-center">{user.Password}</td>
               </tr>
             ))}
           </tbody>
