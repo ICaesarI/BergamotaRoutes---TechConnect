@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
+import Swal from "sweetalert2"; // Importación de SweetAlert
 
 const AdminProfile = () => {
   const [user, setUser] = useState<any | null>(null);
@@ -14,25 +15,43 @@ const AdminProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       const currentUser = auth.currentUser;
-      console.log(currentUser);
       if (!currentUser) {
         router.push("/"); // Redirige a login si no hay usuario logueado
         return;
       }
 
       try {
+        Swal.fire({
+          title: "Cargando...",
+          text: "Estamos obteniendo tus datos...",
+          icon: "info",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
         const userDocRef = doc(db, "admin", currentUser.uid); // Ajusta la ruta según tu estructura
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           setUser(userDoc.data());
         } else {
-          console.error("No se encontró el usuario.");
+          Swal.fire({
+            title: "Error",
+            text: "No se encontró el usuario.",
+            icon: "error",
+          });
         }
       } catch (error) {
-        console.error("Error al obtener los datos del usuario:", error);
+        Swal.fire({
+          title: "Error",
+          text: `Hubo un problema al obtener los datos del usuario: ${error.message}`,
+          icon: "error",
+        });
       } finally {
         setLoading(false);
+        Swal.close(); // Cierra la alerta de carga
       }
     };
 
@@ -44,7 +63,11 @@ const AdminProfile = () => {
       await signOut(auth);
       router.push("/login"); // Redirige a la página de inicio de sesión
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      Swal.fire({
+        title: "Error",
+        text: `No se pudo cerrar sesión: ${error.message}`,
+        icon: "error",
+      });
     }
   };
 

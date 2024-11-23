@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { getCoordinatesFromAddress } from "@techconnect /src/components/tracking/getCoordinatesFromAddress";
+import Swal from "sweetalert2"; // Importa SweetAlert
 
 const CrearPaquete = () => {
   const [nombre, setNombre] = useState("");
@@ -24,9 +25,7 @@ const CrearPaquete = () => {
   const [codigoPostal, setCodigoPostal] = useState("");
   const [calle, setCalle] = useState("");
   const [numeroCalle, setNumeroCalle] = useState("");
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [number, setNumber] = useState("");
   const [showRoute, setShowRoute] = useState(false);
   const [step, setStep] = useState("Pendiente");
@@ -38,7 +37,20 @@ const CrearPaquete = () => {
     const fullAddress = `${calle} ${numeroCalle}, ${colonia}, ${ciudad}, ${estadoDireccion}, ${pais}, ${codigoPostal}`;
 
     try {
+      // Muestra alerta de que se están obteniendo las coordenadas
+      Swal.fire({
+        title: "Procesando...",
+        text: "Obteniendo coordenadas de la dirección...",
+        icon: "info",
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        willOpen: () => {
+          Swal.showLoading(); // Muestra el loading spinner
+        },
+      });
+
       const coordinates = await getCoordinatesFromAddress(fullAddress);
+
       if (coordinates) {
         setLocation(coordinates);
 
@@ -77,6 +89,16 @@ const CrearPaquete = () => {
         );
 
         console.log("Paquete creado y agregado a tracking con ID:", paqueteId);
+        
+        // Muestra alerta de éxito
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "El paquete fue creado correctamente.",
+          icon: "success",
+          confirmButtonText: "Aceptar",
+        });
+
+        // Resetear campos
         setNombre("");
         setDescripcion("");
         setPeso("");
@@ -92,12 +114,24 @@ const CrearPaquete = () => {
         setShowRoute(false);
         setStep("Pendiente");
         setMessage("El paquete aún no ha comenzado su ruta");
+
       } else {
-        console.error(
-          "No se pudieron obtener las coordenadas de la dirección."
-        );
+        // Muestra alerta de error si no se pudieron obtener las coordenadas
+        Swal.fire({
+          title: "Error",
+          text: "No se pudieron obtener las coordenadas de la dirección.",
+          icon: "error",
+          confirmButtonText: "Aceptar",
+        });
       }
     } catch (e) {
+      // Muestra alerta de error general
+      Swal.fire({
+        title: "Error",
+        text: "Ocurrió un error al agregar el paquete.",
+        icon: "error",
+        confirmButtonText: "Aceptar",
+      });
       console.error("Error al agregar el paquete: ", e);
     }
   };
@@ -259,46 +293,11 @@ const CrearPaquete = () => {
             </div>
           </div>
 
-          <div className="flex space-x-2">
-            <div className="w-1/2">
-              <label
-                htmlFor="ciudad"
-                className="text-center block text-xs font-medium text-gray-700"
-              >
-                City
-              </label>
-              <input
-                type="text"
-                id="ciudad"
-                value={ciudad}
-                onChange={(e) => setCiudad(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
-              />
-            </div>
-            <div className="w-1/2">
-              <label
-                htmlFor="codigoPostal"
-                className="text-center block text-xs font-medium text-gray-700"
-              >
-                Postal Code
-              </label>
-              <input
-                type="text"
-                id="codigoPostal"
-                value={codigoPostal}
-                onChange={(e) => setCodigoPostal(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
-              />
-            </div>
-          </div>
-
           <button
             type="submit"
-            className="w-full bg-black text-white p-2 rounded hover:bg-gray-700 transition-colors duration-300 font-semibold text-sm text-center"
+            className="mt-4 py-2 px-4 text-white bg-blue-500 rounded hover:bg-blue-600"
           >
-            Make Purchase
+            Create Package
           </button>
         </form>
       </div>

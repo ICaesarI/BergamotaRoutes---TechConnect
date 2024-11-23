@@ -4,12 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signInUser } from "@techconnect /src/components/signInUser";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   // Cargar el email desde localStorage si existe
@@ -23,7 +23,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Resetea errores previos
     try {
       const user = await signInUser(email, password);
       console.log("Inicio de sesión exitoso:", user);
@@ -37,13 +36,22 @@ export default function LoginPage() {
 
       router.push("/"); // Redirecciona a la página principal
     } catch (err: any) {
+      // Usar Swal para mostrar el mensaje de error
       switch (err.message) {
         case "auth/wrong-password":
         case "auth/user-not-found":
-          setError("Correo o contraseña incorrectos.");
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Correo o contraseña incorrectos.",
+          });
           break;
         default:
-          setError("Error al iniciar sesión. Intenta nuevamente.");
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Error al iniciar sesión. Intenta nuevamente.",
+          });
           break;
       }
     }
@@ -105,9 +113,6 @@ export default function LoginPage() {
               placeholder="********"
             />
           </div>
-
-          {/* Display error messages if any */}
-          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
             <div>

@@ -1,10 +1,15 @@
-export const validateBirthday = (birthday: string): boolean => {
+export const validateBirthday = (birthday: string): string | null => {
+  // Verificar si el campo está vacío
+  if (!birthday.trim()) {
+    return "La fecha de nacimiento es obligatoria."; // Campo vacío
+  }
+
   const today = new Date();
   const birthDate = new Date(birthday);
 
   // Verificar si la fecha ingresada es válida
   if (isNaN(birthDate.getTime())) {
-    return false; // Fecha inválida
+    return "La fecha de nacimiento es invalida."; // Fecha inválida
   }
 
   // Calcular la diferencia en años
@@ -19,6 +24,11 @@ export const validateBirthday = (birthday: string): boolean => {
     age--; // Restar un año si el cumpleaños aún no ha pasado
   }
 
-  // Validar si la fecha es pasada y la persona es mayor de edad
-  return age >= 18;
+  // Validar si la persona es mayor de edad
+  if (age < 18) {
+    return "Debes tener al menos 18 años"; // Persona menor de edad
+  }
+
+  // Si todo está bien, devolver null (sin error)
+  return null;
 };

@@ -19,6 +19,8 @@ import GenderSelection from "@techconnect /src/components/genderSelection";
 import PhotoUpload from "@techconnect /src/components/photoUpload";
 
 import { useRegister } from "@techconnect /src/components/context/registerContext";
+import Swal from "sweetalert2";
+import LoadingCart from "@techconnect /src/components/loader"; // Asegúrate de que este sea tu componente de carga
 
 export default function Step_1() {
   const [name, setName] = useState("");
@@ -33,6 +35,8 @@ export default function Step_1() {
     image?: string;
   }>({});
   const [selectedGender, setSelectedGender] = useState("");
+  const [isloader, setIsLoading] = useState(false); // Estado para manejar la carga
+
 
   const router = useRouter();
   const { updateRegisterData } = useRegister();
@@ -49,51 +53,71 @@ export default function Step_1() {
 
   // Manejo del clic en el botón "Siguiente"
   const handleNextClick = () => {
-    const newErrors: {
-      name?: string;
-      lastname?: string;
-      birthday?: string;
-      gender?: string;
-      image?: string;
-    } = {};
+    const newErrors: { [key: string]: string } = {};
 
-    if (!validateName(name)) {
-      newErrors.name = "The name is invalid";
+    // Validaciones y captura de errores personalizados
+    const nameError = validateName(name);
+    if (nameError) {
+      newErrors.name = nameError;
     }
 
-    if (!validateName(lastname)) {
-      newErrors.lastname = "The last name is invalid";
+    const lastnameError = validateName(lastname); // Usando la misma lógica para el apellido
+    if (lastnameError) {
+      newErrors.lastname = lastnameError;
     }
 
-    if (!validateBirthday(birthday)) {
-      newErrors.birthday = "The birthday is invalid";
+    const birthdayError = validateBirthday(birthday); // Validación de la fecha de nacimiento
+    if (birthdayError) {
+      newErrors.birthday = birthdayError;
     }
 
     if (!selectedGender) {
-      newErrors.gender = "The gender is required";
+      newErrors.gender = "El género es requerido.";
     }
 
-    if (!profileImage) {
-      newErrors.image = "The image is required";
+    const imageError = validateImage(profileImage); // Validación de la imagen
+    if (imageError) {
+      newErrors.image = imageError;
     }
 
+    // Si hay errores, mostramos una alerta y no continuamos
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+
+      const errorMessages = Object.values(newErrors).join("<br />"); // Unir los errores con saltos de línea
+
+      // Mostramos un SweetAlert2 con los errores
+      Swal.fire({
+        icon: "error",
+        title: "Formulario incompleto",
+        html: errorMessages,
+        confirmButtonText: "Aceptar",
+      });
+
       return;
     }
 
+    // Mostrar pantalla de carga
+    setIsLoading(true);
+
+    // Si no hay errores, vaciamos los errores y actualizamos los datos
     setErrors({});
-    updateRegisterData({
-      name,
-      lastname,
-      birthday,
-      selectedGender,
-      profileImage,
-    });
-    router.push("/register/step-2");
+    setTimeout(() => {
+      // Actualizar datos de registro
+      updateRegisterData({
+        name,
+        lastname,
+        birthday,
+        selectedGender,
+        profileImage,
+      });
+
+      // Redirigir a la siguiente página
+      router.push("/register/step-2");
+    }, 2000); // Cambia el tiempo si lo necesitas
   };
 
-  // Calcula la fecha mínima (por ejemplo, hace 120 años)
+  // Calcula la fecha mínima
   const getMinDate = () => {
     const minDate = new Date();
     minDate.setFullYear(minDate.getFullYear() - 80);
@@ -154,10 +178,12 @@ export default function Step_1() {
           <div>
             <InputField
               label="Name:"
+              type="text"
               placeholder="Enter your name"
               icon={userIcon}
               value={name}
               onChange={setName}
+              
             />
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
@@ -167,10 +193,12 @@ export default function Step_1() {
           <div>
             <InputField
               label="Last Name:"
+              type="text"
               placeholder="Enter your last name"
               icon={userIcon}
               value={lastname}
               onChange={setLastname}
+            
             />
             {errors.lastname && (
               <p className="text-red-500 text-sm">{errors.lastname}</p>
@@ -200,22 +228,26 @@ export default function Step_1() {
               <p className="text-red-500 text-sm">{errors.birthday}</p>
             )}
           </div>
-
-          {/* Upload Photo */}
-          <PhotoUpload onImageChange={handleImageChange} />
-          {errors.image && (
-            <p className="text-red-500 text-sm">{errors.image}</p>
-          )}
+          <div>
+            {/* Upload Photo */}
+            <PhotoUpload onImageChange={handleImageChange} />
+            {errors.image && (
+              <p className="text-red-500 text-sm">{errors.image}</p>
+            )}
+          </div>
         </div>
 
-        {/* Gender Selection */}
-        <GenderSelection
-          selectedGender={selectedGender}
-          handleGenderSelect={handleGenderSelect}
-        />
-        {errors.gender && (
-          <p className="text-red-500 text-sm">{errors.gender}</p>
-        )}
+        <div className="flex flex-col text-center">
+          {/* Gender Selection */}
+          <GenderSelection
+            selectedGender={selectedGender}
+            handleGenderSelect={handleGenderSelect}
+          />
+          <br />
+          {errors.gender && (
+            <p className="text-center text-red-500 text-sm">{errors.gender}</p>
+          )}
+        </div>
 
         {/* Next Button */}
         <div className="flex justify-end mt-8">

@@ -9,6 +9,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore"; // Importa Fires
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export function AdminHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,19 +46,33 @@ export function AdminHeader() {
   // Obtén los datos del usuario logueado desde Firebase
   useEffect(() => {
     const user = auth.currentUser; // Obtener el usuario logueado
-
+  
     if (user) {
       const userRef = doc(db, "admin", user.uid); // Asumiendo que tienes una colección 'admins'
-      getDoc(userRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          // Si existe el documento, obtén los datos
-          setAdminData(docSnap.data());
-        } else {
-          console.log("No such document!");
-        }
-      });
+      getDoc(userRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            // Si existe el documento, obtén los datos
+            setAdminData(docSnap.data());
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'No se encontró el documento',
+              text: 'No se pudo encontrar los datos del administrador en la base de datos.',
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error obteniendo datos del administrador: ", error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error al obtener datos',
+            text: 'Hubo un problema al intentar obtener los datos del administrador.',
+          });
+        });
     }
   }, []);
+  
 
   const handleLogout = async () => {
     try {
@@ -66,8 +81,14 @@ export function AdminHeader() {
       route.push("/Login");
     } catch (error) {
       console.error("Error signing out: ", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al cerrar sesión',
+        text: 'Hubo un problema al intentar cerrar sesión. Por favor, intenta nuevamente.',
+      });
     }
   };
+  
 
   return (
     <header className="flex flex-col items-center w-full border-b-2 border-black-main bg-black-main p-4 lg:flex-row">

@@ -5,6 +5,7 @@ import { updateDoc, doc, getDoc } from "firebase/firestore";
 import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
 import adminIcon from "@techconnect /src/img/adminIcon.png";
 import Image from "next/image";
+import Swal from "sweetalert2"; // Reemplazo de alert con SweetAlert2
 
 export default function EditAdmin() {
   const [photoURL, setPhotoURL] = useState("");
@@ -14,6 +15,38 @@ export default function EditAdmin() {
   const [adminUid, setAdminUid] = useState(null);
   const [showPhotoInput, setShowPhotoInput] = useState(false); // Estado para mostrar el input de foto
   const [hoverText, setHoverText] = useState(false); // Estado para mostrar el texto en hover
+  const [phoneError, setPhoneError] = useState(""); // Error de validación del número de teléfono
+  const [photoError, setPhotoError] = useState(""); // Error de validación de la imagen
+
+  // Función para validar el número de teléfono
+  const validatePhoneNumber = (number) => {
+    const phoneRegex = /^[0-9]{10}$/; // Ejemplo de validación: 10 dígitos
+    if (!phoneRegex.test(number)) {
+      setPhoneError("El número de teléfono debe tener 10 dígitos.");
+      return false;
+    }
+    setPhoneError("");
+    return true;
+  };
+
+  // Función para validar la imagen
+  const validatePhoto = (file) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+    const maxSize = 2 * 1024 * 1024; // 2 MB
+
+    if (!allowedTypes.includes(file.type)) {
+      setPhotoError("El archivo debe ser una imagen en formato JPG o PNG.");
+      return false;
+    }
+
+    if (file.size > maxSize) {
+      setPhotoError("El tamaño de la imagen no debe superar los 2 MB.");
+      return false;
+    }
+
+    setPhotoError("");
+    return true;
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -58,7 +91,18 @@ export default function EditAdmin() {
     e.preventDefault();
 
     if (!adminUid) {
-      alert("No estás logueado como admin");
+      Swal.fire("Error", "No estás logueado como admin", "error");
+      return;
+    }
+
+    // Validar el número de teléfono antes de enviar
+    if (!validatePhoneNumber(phoneNumber)) {
+      Swal.fire("Error", "Por favor corrige el número de teléfono.", "error");
+      return;
+    }
+
+    if (photoError) {
+      Swal.fire("Error", "Por favor corrige la imagen seleccionada.", "error");
       return;
     }
 
@@ -72,16 +116,29 @@ export default function EditAdmin() {
         updatedAt: new Date().toISOString(),
       });
 
-      alert("¡Datos actualizados correctamente!");
+      Swal.fire("¡Éxito!", "Datos actualizados correctamente.", "success");
     } catch (error) {
       console.error("Error al actualizar el perfil:", error);
-      alert("Hubo un problema al guardar los cambios.");
+      Swal.fire("Error", "Hubo un problema al guardar los cambios.", "error");
     }
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const value = e.target.value;
+    setPhoneNumber(value);
+
+    // Validar mientras se escribe
+    validatePhoneNumber(value);
   };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validar la imagen
+      if (!validatePhoto(file)) {
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoURL(reader.result);
@@ -122,7 +179,7 @@ export default function EditAdmin() {
                 src={photoURL}
                 alt="Vista previa de la foto de perfil"
                 className="w-24 h-24 rounded-full object-cover cursor-pointer"
-                onClick={handlePhotoClick} // Mostrar el input al hacer clic
+                onClick={handlePhotoClick} // Mostrar el input al hacer cli
               />
             ) : (
               <Image
@@ -130,16 +187,15 @@ export default function EditAdmin() {
                 alt="Ícono de administrador"
                 className="w-24 h-24 rounded-full object-cover cursor-pointer"
                 onClick={handlePhotoClick} // Mostrar el input al hacer clic
+                
               />
             )}
-
-            {/* Hover Text */}
-            {hoverText && !photoURL && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-60 p-2 rounded-md text-xs">
-                Haz clic para actualizar la foto
-              </div>
-            )}
           </div>
+
+          {/* Mostrar error de validación */}
+          {photoError && (
+            <p className="text-red-500 text-sm mt-1">{photoError}</p>
+          )}
 
           {/* Input de foto cuando se hace clic en la imagen */}
           {showPhotoInput && (
@@ -181,10 +237,15 @@ export default function EditAdmin() {
             type="tel"
             id="phone"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            className="mt-2 p-2 border border-gray-300 rounded-lg w-full"
+            onChange={handlePhoneNumberChange}
+            className={`mt-2 p-2 border ${
+              phoneError ? "border-red-500" : "border-gray-300"
+            } rounded-lg w-full`}
             required
           />
+          {phoneError && (
+            <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+          )}
         </div>
 
         <div className="mt-6 flex justify-center">

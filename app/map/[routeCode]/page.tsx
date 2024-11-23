@@ -6,6 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import MapComponent from "@techconnect /src/components/map/map";
 import { useParams } from 'next/navigation';
+import Swal from "sweetalert2"; // Importar Swal
 
 interface MapPageProps {
   params: { routeCode: string };
@@ -21,7 +22,15 @@ export default function Map({ params }: MapPageProps) {
       const user = auth.currentUser;
 
       if (!user) {
-        router.push("/login");
+        // Mostrar un alerta con Swal en vez de redirigir inmediatamente
+        Swal.fire({
+          icon: "error",
+          title: "No Autorizado",
+          text: "Debes iniciar sesión para acceder a esta página.",
+          confirmButtonText: "Iniciar sesión",
+        }).then(() => {
+          router.push("/login"); // Redirigir después de que el usuario cierre el Swal
+        });
         return;
       }
 
@@ -38,14 +47,38 @@ export default function Map({ params }: MapPageProps) {
           if (routeData.driverUID === driverUID) {
             setIsAuthorized(true);
           } else {
-            router.push("/not-authorized");
+            // Mostrar un alerta con Swal en vez de redirigir inmediatamente
+            Swal.fire({
+              icon: "error",
+              title: "No Autorizado",
+              text: "No tienes permisos para acceder a esta ruta.",
+              confirmButtonText: "Aceptar",
+            }).then(() => {
+              router.push("/not-authorized"); // Redirigir después de que el usuario cierre el Swal
+            });
           }
         } else {
-          router.push("/not-found");
+          // Mostrar un alerta con Swal en vez de redirigir inmediatamente
+          Swal.fire({
+            icon: "error",
+            title: "Ruta no encontrada",
+            text: "No se pudo encontrar la ruta solicitada.",
+            confirmButtonText: "Aceptar",
+          }).then(() => {
+            router.push("/not-found"); // Redirigir después de que el usuario cierre el Swal
+          });
         }
       } catch (error) {
         console.error("Error verificando autorización:", error);
-        router.push("/not-authorized");
+        // Mostrar un alerta con Swal en caso de error
+        Swal.fire({
+          icon: "error",
+          title: "Error de Autorización",
+          text: "Hubo un problema al verificar tus permisos.",
+          confirmButtonText: "Aceptar",
+        }).then(() => {
+          router.push("/not-authorized"); // Redirigir después de que el usuario cierre el Swal
+        });
       }
     };
 

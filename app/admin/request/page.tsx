@@ -16,6 +16,7 @@ import { Password } from "@mui/icons-material";
 import desertImage from "@techconnect /src/img/desert.png"; // Make sure the path is correct.
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 interface RequestData {
   uid: string;
@@ -90,10 +91,19 @@ const RequestsList: React.FC = () => {
       // Delete user from Firebase Auth
       const user = await auth.getUser(uid); // If you have the permissions
       if (user) await deleteUser(user);
-      alert("User rejected successfully.");
+      
+      Swal.fire({
+        icon: "success",
+        title: "User rejected",
+        text: "User rejected successfully.",
+      });
     } catch (error) {
       console.error("Error rejecting user:", error);
-      alert("Could not reject user. Check permissions.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Could not reject user. Check permissions.",
+      });
     }
   };
 
@@ -103,7 +113,11 @@ const RequestsList: React.FC = () => {
       // Find the user in the local state
       const request = requests.find((request) => request.uid === uid);
       if (!request) {
-        alert("User not found.");
+        Swal.fire({
+          icon: "warning",
+          title: "User not found",
+          text: "User not found.",
+        });
         return;
       }
 
@@ -127,16 +141,25 @@ const RequestsList: React.FC = () => {
         phoneNumber: request.phoneNumber,
         profileImage: request.profileImage,
         createdAt: new Date(),
+        role: "driver",
       });
 
       // Delete the document from "request"
       await deleteDoc(doc(db, "request", uid));
       setRequests(requests.filter((request) => request.uid !== uid));
 
-      alert(`User with UID ${uid} accepted and moved to 'drivers'.`);
+      Swal.fire({
+        icon: "success",
+        title: "User accepted",
+        text: `User with UID ${uid} accepted and moved to 'drivers'.`,
+      });
     } catch (error) {
       console.error("Error accepting user:", error);
-      alert("Could not accept user.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Could not accept user.",
+      });
     }
   };
 

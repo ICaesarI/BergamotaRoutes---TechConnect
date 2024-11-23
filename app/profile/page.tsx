@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation"; // Asegúrate de importar useRouter
+import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 interface Driver {
   name: string;
@@ -14,42 +15,65 @@ interface Driver {
   phoneNumber: string;
   selectedGender: string;
   uid: string;
+  profileImage: string; // Campo adicional para la imagen
 }
 
 export default function Profile() {
-  const [user, setUser] = useState<firebase.User | null>(null); // Estado para almacenar el usuario autenticado
-  const [driverData, setDriverData] = useState<Driver | null>(null); // Estado para almacenar los datos del conductor
-  const [loading, setLoading] = useState<boolean>(true); // Estado para manejar el estado de carga
-  const router = useRouter(); // Instancia de useRouter para redirigir después de cerrar sesión
+  const [user, setUser] = useState<firebase.User | null>(null);
+  const [driverData, setDriverData] = useState<Driver | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser); // Establecer el usuario autenticado
-        const docRef = doc(db, "drivers", currentUser.uid); // Acceder a la colección 'drivers' con el UID
+        setUser(currentUser);
+        const docRef = doc(db, "drivers", currentUser.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setDriverData(docSnap.data() as Driver); // Establecer los datos del conductor en el estado
+          setDriverData(docSnap.data() as Driver);
         } else {
           console.log("No se encontraron datos del conductor.");
         }
       } else {
         setUser(null);
       }
-      setLoading(false); // Terminar la carga
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
-    try {
-      await signOut(auth); // Cerrar sesión
-      router.push("/"); // Redirigir al usuario a la página de inicio de sesión
-    } catch (error) {
-      console.error("Error al cerrar sesión", error);
-    }
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¡Cerrar sesión terminará tu sesión actual!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, cerrar sesión',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await signOut(auth);
+          router.push("/"); // Redirigir al login
+          Swal.fire(
+            '¡Cerrada!',
+            'Has cerrado sesión correctamente.',
+            'success'
+          );
+        } catch (error) {
+          console.error("Error al cerrar sesión", error);
+          Swal.fire(
+            'Error',
+            'Hubo un problema al cerrar sesión. Intenta nuevamente.',
+            'error'
+          );
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -58,7 +82,9 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="text-center p-8 text-red-600">No has iniciado sesión</div>
+      <div className="text-center p-8 text-red-600">
+        No has iniciado sesión
+      </div>
     );
   }
 
@@ -75,7 +101,7 @@ export default function Profile() {
       <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 space-y-6">
         <div className="flex flex-col items-center">
           <img
-            src={user.photoURL || "/default-profile.png"}
+            src={driverData.profileImage || "/default-profile.png"}
             alt="Foto de perfil"
             className="w-32 h-32 rounded-full object-cover border-4 border-blue-500 mb-4"
           />
@@ -112,7 +138,7 @@ export default function Profile() {
             Editar Perfil
           </a>
           <button
-            onClick={handleSignOut} // Llamar a la función de cierre de sesión
+            onClick={handleSignOut}
             className="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300"
           >
             Cerrar Sesión

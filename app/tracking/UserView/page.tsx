@@ -5,6 +5,7 @@ import MapComponent from "@techconnect /src/components/map/clientMap";
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { doc, getDoc } from "firebase/firestore";
 import { error } from "console";
+import Swal from "sweetalert2";
 
 const PackageTracking = () => {
   const [trackingCode, setTrackingCode] = useState("");
@@ -13,11 +14,16 @@ const PackageTracking = () => {
     message: string;
     showRoute: boolean;
   } | null>(null);
-  const [isCodeEntered, setIsCodeEntered] = useState(false); // Nuevo estado para controlar la visibilidad del formulario
+  const [isCodeEntered, setIsCodeEntered] = useState(false);
 
   const handleTrack = async () => {
     if (!trackingCode) {
-      alert("Por favor, ingresa un código de seguimiento.");
+      Swal.fire({
+        icon: "warning",
+        title: "Código faltante",
+        text: "Por favor, ingresa un código de seguimiento.",
+        confirmButtonText: "Entendido",
+      });
       return;
     }
 
@@ -30,16 +36,32 @@ const PackageTracking = () => {
         console.log(trackingStatus);
         setStatus({
           step: trackingStatus.step || "En proceso",
-          message: trackingStatus.message || "Paquete en proceso de envio",
+          message: trackingStatus.message || "Paquete en proceso de envío",
           showRoute: trackingStatus.showRoute || false,
         });
-        setIsCodeEntered(true); // Ocultamos el formulario y mostramos el contenido después de ingresar el código
+        setIsCodeEntered(true);
+        Swal.fire({
+          icon: "success",
+          title: "¡Código encontrado!",
+          text: "Hemos encontrado el paquete con el código proporcionado.",
+          confirmButtonText: "Continuar",
+        });
       } else {
-        alert("No se encontró un paquete con ese código de seguimiento.");
+        Swal.fire({
+          icon: "error",
+          title: "No encontrado",
+          text: "No se encontró un paquete con ese código de seguimiento.",
+          confirmButtonText: "Intentar de nuevo",
+        });
       }
     } catch (error) {
       console.error("Error al obtener el estado del paquete:", error);
-      alert("Ocurrió un error al intentar obtener el estado del paquete.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ocurrió un error al intentar obtener el estado del paquete. Por favor, inténtalo más tarde.",
+        confirmButtonText: "Entendido",
+      });
     }
   };
 
@@ -52,12 +74,8 @@ const PackageTracking = () => {
         </h3>
       </div>
 
-      {/* Mostrar el formulario solo si el código no ha sido ingresado */}
       {!isCodeEntered && (
         <div className="bg-white p-8">
-          <div className="flex items-center">
-            {/* Aquí podrías agregar un icono o imagen */}
-          </div>
           <div className="mt-6 mx-16">
             <h1 className="text-2xl font-bold">Ingresa el código:</h1>
             <input
@@ -77,7 +95,6 @@ const PackageTracking = () => {
         </div>
       )}
 
-      {/* Mostrar el estado y mapa del paquete cuando se ingresa el código */}
       {isCodeEntered && (
         <div className="bg-gray-100 p-4 flex flex-col justify-between rounded-lg shadow-inner">
           {status ? (
@@ -101,7 +118,7 @@ const PackageTracking = () => {
                 </div>
               ) : (
                 <div className="text-center text-gray-600 mt-4">
-                  El pedido esta {status.step}
+                  El pedido está {status.step}.
                 </div>
               )}
             </div>

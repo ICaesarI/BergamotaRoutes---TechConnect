@@ -22,6 +22,7 @@ import { useAuth } from "@techconnect /src/auth/useAuth";
 import TrackingList from "@techconnect /src/components/tracking/trackingList";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function Tracking() {
   const [routeCode, setRouteCode] = useState("");
@@ -48,20 +49,30 @@ export default function Tracking() {
           coordinate:
             "Esta ruta ya está asignada a otro conductor y no puedes acceder a ella.",
         });
+        Swal.fire({
+          icon: 'error',
+          title: 'Ruta ya asignada',
+          text: 'Esta ruta ya está asignada a otro conductor.',
+        });
         setRouteLocked(false);
         return;
       }
+      
 
-      // Revisa si el campo `statusTracking` es "Finished"
       if (
         routeSnap.exists() &&
         routeSnap.data().statusTracking === "Finished"
       ) {
         setRouteLocked(false);
-        console.warn("La ruta está finalizada y no se puede mostrar.");
+        Swal.fire({
+          icon: 'warning',
+          title: 'Ruta Finalizada',
+          text: 'La ruta está finalizada y no se puede mostrar.',
+        });
         setError({ coordinate: "La ruta está finalizada o no existe." });
         return; // No cargar los datos de la ruta si está finalizada
       }
+      
 
       const packagesRef = collection(db, "tracking", routeCode, "packages"); // Ruta a la colección de packages dentro de la ruta especificada
       const querySnapshot = await getDocs(packagesRef);
@@ -95,7 +106,12 @@ export default function Tracking() {
     } catch (error) {
       console.error("Error al obtener los datos:", error);
       setError({ coordinate: "Error al obtener los datos." });
-    }
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al obtener los datos de la ruta.',
+      });
+    }    
   };
 
   useEffect(() => {
@@ -111,9 +127,12 @@ export default function Tracking() {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          // Si el usuario no está en la tabla 'users', redirige a otra página
-          console.log("Usuario no encontrado en la base de datos.");
-          router.push("/no-access"); // Redirige a una página de error o acceso denegado
+          Swal.fire({
+            icon: 'error',
+            title: 'Acceso Denegado',
+            text: 'El usuario no fue encontrado en la base de datos.',
+          });
+          router.push("/no-access"); // Redirige a la página de acceso denegado
           return;
         }
         // Si el usuario existe en la base de datos, cambiar el estado a true para cargar la página
