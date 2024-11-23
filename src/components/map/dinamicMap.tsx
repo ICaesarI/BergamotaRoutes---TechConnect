@@ -34,6 +34,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   const userLocationRef = useRef<L.LatLng | null>(null);
   const [sortedMarkers, setSortedMarkers] = useState<MarkerData[]>([]);
   const [loading, setLoading] = useState(true);
+  const markersRef = useRef<L.Marker[]>([]); // Mantener referencia de los marcadores
 
   const fetchMarkersFromFirestore = async () => {
     const docRef = doc(db, "tracking", routeCode);
@@ -93,7 +94,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
         }).addTo(mapRef.current);
       }
 
-      // Obtener ubicación del usuario y los marcadores
+      // Obtener ubicación del conductor y los marcadores
       const userLocation = await new Promise<L.LatLng>((resolve, reject) => {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -108,6 +109,18 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
         }
       });
       userLocationRef.current = userLocation;
+
+      // Centrar el mapa en la ubicación del conductor
+      mapRef.current.setView(userLocationRef.current, 13); // Ajusta el zoom según sea necesario
+
+      // Agregar marcador del conductor
+      L.marker([userLocation.lat, userLocation.lng]).addTo(mapRef.current);
+
+      // Limpiar marcadores anteriores cuando cambie la ruta
+      markersRef.current.forEach((marker) => {
+        mapRef.current?.removeLayer(marker);
+      });
+      markersRef.current = []; // Limpiar la referencia de los marcadores
 
       const markers = await fetchMarkersFromFirestore();
       console.log("Datos obtenidos de Firestore:", markers); // Verifica la estructura de los datos
@@ -130,6 +143,14 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
         );
       }
 
+      // Agregar nuevos marcadores
+      markers.forEach((marker) => {
+        const leafletMarker = L.marker([marker.lat, marker.lng]).addTo(
+          mapRef.current!
+        );
+        markersRef.current.push(leafletMarker); // Guardar en la referencia
+      });
+
       setLoading(false);
     };
 
@@ -141,7 +162,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
         mapRef.current = null;
       }
     };
-  }, [routeCode]);
+  }, [routeCode]); // Dependencia de routeCode para recargar el mapa cuando cambie
   return (
     <>
       {loading && (

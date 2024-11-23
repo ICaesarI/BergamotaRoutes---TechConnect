@@ -9,6 +9,7 @@ import {
   doc,
   setDoc,
   GeoPoint,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { getCoordinatesFromAddress } from "@techconnect /src/components/tracking/getCoordinatesFromAddress";
@@ -32,6 +33,10 @@ const CrearPaquete = () => {
   const [step, setStep] = useState("Pendiente");
   const [message, setMessage] = useState("");
 
+  function generateUniqueId(): string {
+    return Math.random().toString(36).substring(2, 7); // Genera una cadena aleatoria de 5 caracteres
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -42,6 +47,7 @@ const CrearPaquete = () => {
       if (coordinates) {
         setLocation(coordinates);
 
+        // Crear el paquete en la colección 'paquetesPrueba'
         const docRef = await addDoc(collection(db, "paquetesPrueba"), {
           nombre,
           descripcion,
@@ -63,11 +69,34 @@ const CrearPaquete = () => {
 
         await updateDoc(doc(db, "paquetesPrueba", paqueteId), {
           uid: paqueteId,
-          status: `/pauquetesPrueba/${paqueteId}`,
+          status: `/paquetesPrueba/${paqueteId}`,
         });
 
+        // Contar el número de paquetes en los documentos de tracking
+        const trackingRef = collection(db, "tracking");
+        const trackingSnapshot = await getDocs(trackingRef);
+        let trackingDocId = "";
+
+        // Buscar un documento de tracking con menos de 5 paquetes
+        for (let doc of trackingSnapshot.docs) {
+          const packagesRef = collection(db, `tracking/${doc.id}/packages`);
+          const packagesSnapshot = await getDocs(packagesRef);
+
+          if (packagesSnapshot.size < 5) {
+            trackingDocId = doc.id; // Encontramos un documento con menos de 5 paquetes
+            break;
+          }
+        }
+
+        // Si no encontramos un documento con menos de 5 paquetes, crear uno nuevo
+        if (!trackingDocId) {
+          trackingDocId = generateUniqueId(); // Genera un nuevo ID de documento
+          await setDoc(doc(db, `tracking/${trackingDocId}`), { packages: [] });
+        }
+
+        // Agregar el paquete al documento de tracking correspondiente
         await setDoc(
-          doc(db, `tracking/9V2pmqZC2zNqxjRBuHOO/packages/${paqueteId}`),
+          doc(db, `tracking/${trackingDocId}/packages/${paqueteId}`),
           {
             address: fullAddress,
             location: new GeoPoint(coordinates.lat, coordinates.lng),
@@ -76,7 +105,13 @@ const CrearPaquete = () => {
           }
         );
 
+        await setDoc(doc(db, `tracking/${trackingDocId}`), {
+          driverUID: "", // Puede ser modificado según tus necesidades
+        });
+
         console.log("Paquete creado y agregado a tracking con ID:", paqueteId);
+
+        // Limpiar el formulario
         setNombre("");
         setDescripcion("");
         setPeso("");

@@ -3,13 +3,13 @@ import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../database/firebaseConfiguration";
 
 export async function signInUser(email: string, password: string) {
-  try {
-    // Validación de entrada
-    if (!email || !password) {
-      throw new Error("El correo y la contraseña son obligatorios.");
-    }
+  // Validate input
+  if (!email || !password) {
+    return { success: false, message: "Email and password are required." };
+  }
 
-    // Autenticar al usuario
+  try {
+    // Authenticate the user
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
@@ -17,30 +17,27 @@ export async function signInUser(email: string, password: string) {
     );
     const user = userCredential.user;
 
-    console.log("Usuario autenticado con UID:", user.uid);
-
-    // if (!user.emailVerified) {
-    //   throw new Error(
-    //     "Por favor, confirma tu correo electrónico antes de continuar."
-    //   );
-    // }
-
-    // Verificar el documento en Firestore
+    // Check user document in Firestore
     const userDocRef = doc(db, "users", user.uid);
-    console.log("UID: " + user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (!userDoc.exists()) {
-      throw new Error(
-        "Tu cuenta no tiene permisos para acceder. Contacta al administrador."
-      );
+      return {
+        success: false,
+        message:
+          "Your account does not have access permissions. Please contact the administrator.",
+      };
     }
 
-    console.log("Documento de usuario encontrado:", userDoc.data());
-
-    return { user, userData: userDoc.data() };
+    return {
+      success: true,
+      user,
+      userData: userDoc.data(),
+    };
   } catch (error: any) {
-    console.error("Error al iniciar sesión:", error.message || error.code);
-    throw new Error(error.message || "Error al iniciar sesión.");
+    return {
+      success: false,
+      message: error.message || "An error occurred during sign-in.",
+    };
   }
 }

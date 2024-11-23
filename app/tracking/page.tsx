@@ -190,10 +190,10 @@ export default function Tracking() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 p-5">
-      <div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5">
+      <div className="flex flex-col">
         {/* Input and button disabled if the route is already assigned */}
-        <div className="m-3 flex flex-col justify-between">
+        <div className="m-3 flex flex-col space-y-4">
           <InputField
             label="Enter route code"
             placeholder="e.g. XtDAkCIWcvLpetIkTEWn"
@@ -206,9 +206,9 @@ export default function Tracking() {
           />
           <button
             onClick={() => fetchTrackingData(routeCode)}
-            className={`mt-4 w-full ${
+            className={`w-full py-2 px-4 font-bold rounded ${
               routeLocked ? "bg-gray-400" : "bg-green-500 hover:bg-green-600"
-            } text-white font-bold py-2 px-4 rounded`}
+            } text-white`}
             disabled={routeLocked}
           >
             {routeLocked ? "Route Assigned" : "Add Route"}
@@ -228,7 +228,7 @@ export default function Tracking() {
             <div className="mt-4 flex justify-end">
               <Link
                 href={`/map/${routeCode}`}
-                className="codepen-button mt-4 w-2/4 text-center"
+                className="codepen-button mt-4 w-full sm:w-2/4 text-center bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
                 onClick={startRoute}
               >
                 <span>Start Route</span>
@@ -238,7 +238,7 @@ export default function Tracking() {
         )}
       </div>
 
-      <div className="flex justify-center items-center ml-32">
+      <div className="flex justify-center items-center mt-6 md:mt-0">
         {trackingData.length > 0 ? (
           <MapComponent routeCode={routeCode} />
         ) : (

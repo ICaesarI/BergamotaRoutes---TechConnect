@@ -15,7 +15,11 @@ const TrackingList = ({ trackingData }: { trackingData: any[] }) => {
   };
 
   return (
-    <ul className="space-y-2 p-4 list-disc pl-5">
+    <ul
+      className={`space-y-2 p-4 list-disc pl-5 ${
+        trackingData.length > 3 ? "max-h-60 overflow-y-auto" : ""
+      }`}
+    >
       {trackingData.map((data, index) => (
         <li
           key={index}

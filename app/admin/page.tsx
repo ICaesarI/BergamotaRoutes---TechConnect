@@ -24,6 +24,8 @@ import { useRouter } from "next/navigation";
 
 import Image from "next/image";
 
+import SettingsLoader from "@techconnect /src/components/settingsLoader";
+
 export default function Admin() {
   const [userData, setUserData] = useState(null);
   const [totalErrors, setTotalErrors] = useState(0);
@@ -32,45 +34,30 @@ export default function Admin() {
   const [recentDrivers, setRecentDrivers] = useState([]);
   const [lastIssue, setLastIssue] = useState(null);
   const [lastRequest, setLastRequest] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Estado para manejar la carga
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // Estado que puede ser null, true o false
 
   const router = useRouter();
 
   useEffect(() => {
     // Manejo de autenticación
+    // Verificar si el usuario logueado es un admin
+    const checkAdmin = async (userUid: string) => {
+      const adminDoc = doc(db, "admin", userUid);
+      const adminSnapshot = await getDoc(adminDoc); // Usamos getDoc para un único documento
+      if (adminSnapshot.exists()) {
+        setIsAdmin(true); // Si el documento existe, es admin
+      } else {
+        setIsAdmin(false); // Si no existe, no es admin
+      }
+    };
+
+    // Detectar el estado de autenticación
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const { uid } = user;
-
-          // Obtener datos del administrador
-          const adminDocRef = doc(db, "admin", uid);
-          const adminDoc = await getDoc(adminDocRef);
-
-          if (adminDoc.exists() && adminDoc.data().role === "admin") {
-            // Si el usuario es un admin, mostramos los datos
-            setUserData(adminDoc.data());
-            fetchData();
-          } else {
-            // Si el usuario no es admin, redirigimos
-            router.push("/no-access"); // Ruta a una página de acceso denegado o página de inicio
-          }
-
-          // Obtener datos del administrador
-          const adminValidationRef = doc(db, "admin", uid);
-          const adminValidationDoc = await getDoc(adminValidationRef);
-
-          if (adminValidationDoc.exists()) {
-            setUserData(adminValidationDoc.data());
-          } else {
-            console.warn("Usuario no encontrado en la colección 'admins'");
-          }
-        } catch (error) {
-          console.error("Error al obtener datos del administrador:", error);
-        }
+        await checkAdmin(user.uid);
       } else {
-        console.warn("No hay usuario autenticado");
-        router.push("/error");
+        setIsAdmin(false); // Si no está logueado, no es admin
       }
     });
 
@@ -124,6 +111,8 @@ export default function Admin() {
         setLastRequest(lastrequestData || null);
       } catch (error) {
         console.error("Error al obtener estadísticas:", error);
+      } finally {
+        setLoading(false); // Actualiza el estado de loading una vez que las operaciones hayan finalizado
       }
     };
 
@@ -132,9 +121,15 @@ export default function Admin() {
     return () => unsubscribe(); // Limpiar listener al desmontar el componente
   }, []);
 
-  // Si no hay permisos, la página no se renderiza
-  if (!userData) {
-    return null; // No mostrar nada si no es un administrador o no hay usuario autenticado
+  // Si el estado de isAdmin es null o loading es true, mostramos el loader
+  if (isAdmin === null || loading) {
+    return <SettingsLoader />; // Muestra el loader mientras se carga
+  }
+
+  // Si no es admin, redirigir a la página de error
+  if (isAdmin === false) {
+    router.push("/error");
+    return <SettingsLoader />;
   }
 
   return (
@@ -171,34 +166,38 @@ export default function Admin() {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Total Errors */}
-          <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-red-500 hover:bg-red-500 group">
-            <div className="flex items-center space-x-4">
-              <div className="w-3 h-3 bg-red-500 rounded-full group-hover:bg-white"></div>
-              <div>
-                <p className="text-lg font-medium text-gray-800 group-hover:text-white">
-                  Total Errors
-                </p>
-                <p className="text-red-500 font-bold text-xl group-hover:text-white">
-                  {totalErrors}
-                </p>
+          <a href="admin/errors" id="ref">
+            <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-red-500 hover:bg-red-500 group">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-red-500 rounded-full group-hover:bg-white"></div>
+                <div>
+                  <p className="text-lg font-medium text-gray-800 group-hover:text-white">
+                    Total Errors
+                  </p>
+                  <p className="text-red-500 font-bold text-xl group-hover:text-white">
+                    {totalErrors}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          </a>
 
           {/* Total Drivers */}
-          <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-green-500 hover:bg-green-500 group cursor-pointer">
-            <div className="flex items-center space-x-4">
-              <div className="w-3 h-3 bg-green-500 rounded-full group-hover:bg-white"></div>
-              <div>
-                <p className="text-lg font-medium text-gray-800 group-hover:text-white">
-                  Total Drivers
-                </p>
-                <p className="text-green-500 font-bold text-xl group-hover:text-white">
-                  {totalDrivers}
-                </p>
+          <a href="admin/drivers" id="ref">
+            <div className="bg-[#f2f3f7] rounded-xl p-5 shadow-md hover:shadow-lg transition border-2 border-green-500 hover:bg-green-500 group cursor-pointer">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-green-500 rounded-full group-hover:bg-white"></div>
+                <div>
+                  <p className="text-lg font-medium text-gray-800 group-hover:text-white">
+                    Total Drivers
+                  </p>
+                  <p className="text-green-500 font-bold text-xl group-hover:text-white">
+                    {totalDrivers}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          </a>
 
           {/* New Requests */}
           <div

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signInUser } from "@techconnect /src/components/signInUser";
 import { useRouter } from "next/navigation";
+import { db, auth } from "@techconnect /src/database/firebaseConfiguration"; // Ajusta la ruta según tu proyecto
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -24,9 +25,19 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); // Resetea errores previos
+
     try {
+      // Autenticación de usuario
       const user = await signInUser(email, password);
       console.log("Inicio de sesión exitoso:", user);
+
+      // Verifica si el usuario está en la tabla "request"
+      const requestRef = doc(db, "request", user.uid);
+      const requestDoc = await getDoc(requestRef);
+
+      if (requestDoc.exists()) {
+        setError("Your account has not yet been assigned by an administrator. Please wait for the authorization process to be completed.");
+      }
 
       // Guardar el email si "Remember me" está marcado
       if (rememberMe) {
@@ -37,14 +48,15 @@ export default function LoginPage() {
 
       router.push("/"); // Redirecciona a la página principal
     } catch (err: any) {
-      switch (err.message) {
-        case "auth/wrong-password":
-        case "auth/user-not-found":
-          setError("Correo o contraseña incorrectos.");
-          break;
-        default:
-          setError("Error al iniciar sesión. Intenta nuevamente.");
-          break;
+      if (err.message === "auth/user-in-request") {
+        setError("El usuario no está autenticado.");
+      } else if (
+        err.message === "auth/wrong-password" ||
+        err.message === "Firebase: Error (auth/invalid-credential)."
+      ) {
+        setError("Correo o contraseña incorrectos.");
+      } else {
+        setError("Error al iniciar sesión. Intenta nuevamente.");
       }
     }
   };
@@ -123,7 +135,7 @@ export default function LoginPage() {
               </label>
             </div>
             <Link
-              href="/forgot-password"
+              href="/forgotPassword"
               className="text-sm text-blue-500 hover:underline"
             >
               Forgot Password?

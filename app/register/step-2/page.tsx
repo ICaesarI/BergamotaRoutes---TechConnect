@@ -7,6 +7,8 @@ import emailIcon from "@techconnect /src/img/emailLogo.png";
 import passwordIcon from "@techconnect /src/img/passwordLogo.png";
 import phoneIcon from "@techconnect /src/img/phoneIcon.png";
 
+import bcrypt from "bcryptjs";
+
 import { validateEmail } from "@techconnect /src/security/validateEmail";
 import { validatePasswordInput } from "@techconnect /src/security/validatePassword";
 import { validatePhoneNumber } from "@techconnect /src/security/validatePhoneNumber";
@@ -75,10 +77,13 @@ export default function Step_2() {
     updateRegisterData({ email, password, phoneNumber });
 
     try {
+      // Hashear la contraseña antes de crear el usuario
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password
+        hashedPassword
       );
       const user = userCredential.user;
 
@@ -97,7 +102,7 @@ export default function Step_2() {
           ...registerData,
           uid: user.uid,
           email,
-          password,
+          hashedPassword,
           phoneNumber,
           profileImage: imageUrl,
           createdAt: new Date(),
