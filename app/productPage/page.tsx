@@ -25,7 +25,9 @@ const CrearPaquete = () => {
   const [codigoPostal, setCodigoPostal] = useState("");
   const [calle, setCalle] = useState("");
   const [numeroCalle, setNumeroCalle] = useState("");
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [number, setNumber] = useState("");
   const [showRoute, setShowRoute] = useState(false);
   const [step, setStep] = useState("Pendiente");
@@ -89,7 +91,7 @@ const CrearPaquete = () => {
         );
 
         console.log("Paquete creado y agregado a tracking con ID:", paqueteId);
-        
+
         // Muestra alerta de éxito
         Swal.fire({
           title: "¡Éxito!",
@@ -99,11 +101,6 @@ const CrearPaquete = () => {
         });
 
         // Resetear campos
-<<<<<<< HEAD
-=======
-
-        // Limpiar el formulario
->>>>>>> origin/chino
         setNombre("");
         setDescripcion("");
         setPeso("");
@@ -119,14 +116,13 @@ const CrearPaquete = () => {
         setShowRoute(false);
         setStep("Pendiente");
         setMessage("El paquete aún no ha comenzado su ruta");
-
       } else {
         // Muestra alerta de error si no se pudieron obtener las coordenadas
         Swal.fire({
           title: "Error",
           text: "No se pudieron obtener las coordenadas de la dirección.",
           icon: "error",
-          confirmButtonText: "Aceptar", 
+          confirmButtonText: "Aceptar",
         });
       }
     } catch (e) {
@@ -292,41 +288,6 @@ const CrearPaquete = () => {
                 id="pais"
                 value={pais}
                 onChange={(e) => setPais(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
-              />
-            </div>
-          </div>
-
-          <div className="flex space-x-2">
-            <div className="w-1/2">
-              <label
-                htmlFor="ciudad"
-                className="text-center block text-xs font-medium text-gray-700"
-              >
-                City
-              </label>
-              <input
-                type="text"
-                id="ciudad"
-                value={ciudad}
-                onChange={(e) => setCiudad(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
-              />
-            </div>
-            <div className="w-1/2">
-              <label
-                htmlFor="codigoPostal"
-                className="text-center block text-xs font-medium text-gray-700"
-              >
-                Zip Code
-              </label>
-              <input
-                type="text"
-                id="codigoPostal"
-                value={codigoPostal}
-                onChange={(e) => setCodigoPostal(e.target.value)}
                 required
                 className="p-2 border border-gray-300 rounded w-full text-sm text-center"
               />

@@ -49,32 +49,33 @@ export default function Step_2() {
 
   // Manejo del clic en el botón "Siguiente"
   // Change the handleNextClick function to be asynchronous
-const handleNextClick = async () => {  // Add 'async' here
-  const newErrors: { [key: string]: string } = {};
+  const handleNextClick = async () => {
+    // Add 'async' here
+    const newErrors: { [key: string]: string } = {};
 
-  const emailError = validateEmail(email); // Validación del correo electrónico
-  if (emailError) {
-    newErrors.email = emailError;
-  }
+    const emailError = validateEmail(email); // Validación del correo electrónico
+    if (emailError) {
+      newErrors.email = emailError;
+    }
 
-  // Validación de la contraseña
-  const passwordError = validatePasswordInput(password);
-  if (passwordError) {
-    newErrors.password = passwordError;
-  }
+    // Validación de la contraseña
+    const passwordError = validatePasswordInput(password);
+    if (passwordError) {
+      newErrors.password = passwordError;
+    }
 
-  if (password !== passwordConfirm) {
-    newErrors.passwordConfirm = "Las contraseñas no coinciden.";
-  }
+    if (password !== passwordConfirm) {
+      newErrors.passwordConfirm = "Las contraseñas no coinciden.";
+    }
 
-  const phoneError = validatePhoneNumber(phoneNumber);
-  if (phoneError) {
-    newErrors.phoneNumber = phoneError;
-  }
+    const phoneError = validatePhoneNumber(phoneNumber);
+    if (phoneError) {
+      newErrors.phoneNumber = phoneError;
+    }
 
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    const errorMessages = Object.values(newErrors).join("<br />"); // Unir los errores con saltos de línea
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const errorMessages = Object.values(newErrors).join("<br />"); // Unir los errores con saltos de línea
 
       // Mostramos un SweetAlert2 con los errores
       Swal.fire({
@@ -83,50 +84,35 @@ const handleNextClick = async () => {  // Add 'async' here
         html: errorMessages,
         confirmButtonText: "Aceptar",
       });
-    return; // Exit early if there are errors
-  }
-
-  setErrors({});
-  updateRegisterData({ email, password, phoneNumber });
-
-  try {
-      // Hashear la contraseña antes de crear el usuario
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      hashedPassword
-    );
-    const user = userCredential.user;
-
-    await sendEmailVerification(user);
-
-    if (registerData.profileImage) {
-      const storage = getStorage();
-      const storageRef = ref(
-        storage,
-        `driversProfilePictures/${user.uid}/profileImage.jpg`
-      );
-      await uploadString(storageRef, registerData.profileImage, "data_url");
-      const imageUrl = await getDownloadURL(storageRef);
-
-<<<<<<< HEAD
-      await setDoc(doc(db, "request", user.uid), {
-        ...registerData,
-        uid: user.uid,
-        name,
-        email,
-        password,
-        phoneNumber,
-        profileImage: imageUrl,
-        createdAt: new Date(),
-      });
+      return; // Exit early if there are errors
     }
-=======
+
+    setErrors({});
+    updateRegisterData({ email, password, phoneNumber });
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      await sendEmailVerification(user);
+
+      if (registerData.profileImage) {
+        const storage = getStorage();
+        const storageRef = ref(
+          storage,
+          `driversProfilePictures/${user.uid}/profileImage.jpg`
+        );
+        await uploadString(storageRef, registerData.profileImage, "data_url");
+        const imageUrl = await getDownloadURL(storageRef);
+
         await setDoc(doc(db, "request", user.uid), {
           ...registerData,
           uid: user.uid,
+          name,
           email,
           password,
           phoneNumber,
@@ -134,15 +120,13 @@ const handleNextClick = async () => {  // Add 'async' here
           createdAt: new Date(),
         });
       }
->>>>>>> origin/chino
 
-    router.push("/register/step-3");
-  } catch (error) {
-    console.error("Error al registrar al usuario:", error);
-    alert("Error al registrar al usuario: " + error.message);
-  }
-};
-
+      router.push("/register/step-3");
+    } catch (error) {
+      console.error("Error al registrar al usuario:", error);
+      alert("Error al registrar al usuario: " + error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
