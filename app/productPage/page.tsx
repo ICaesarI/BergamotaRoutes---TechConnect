@@ -99,6 +99,11 @@ const CrearPaquete = () => {
         });
 
         // Resetear campos
+<<<<<<< HEAD
+=======
+
+        // Limpiar el formulario
+>>>>>>> origin/chino
         setNombre("");
         setDescripcion("");
         setPeso("");
@@ -121,7 +126,7 @@ const CrearPaquete = () => {
           title: "Error",
           text: "No se pudieron obtener las coordenadas de la dirección.",
           icon: "error",
-          confirmButtonText: "Aceptar",
+          confirmButtonText: "Aceptar", 
         });
       }
     } catch (e) {
@@ -287,6 +292,41 @@ const CrearPaquete = () => {
                 id="pais"
                 value={pais}
                 onChange={(e) => setPais(e.target.value)}
+                required
+                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
+              />
+            </div>
+          </div>
+
+          <div className="flex space-x-2">
+            <div className="w-1/2">
+              <label
+                htmlFor="ciudad"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                City
+              </label>
+              <input
+                type="text"
+                id="ciudad"
+                value={ciudad}
+                onChange={(e) => setCiudad(e.target.value)}
+                required
+                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
+              />
+            </div>
+            <div className="w-1/2">
+              <label
+                htmlFor="codigoPostal"
+                className="text-center block text-xs font-medium text-gray-700"
+              >
+                Zip Code
+              </label>
+              <input
+                type="text"
+                id="codigoPostal"
+                value={codigoPostal}
+                onChange={(e) => setCodigoPostal(e.target.value)}
                 required
                 className="p-2 border border-gray-300 rounded w-full text-sm text-center"
               />

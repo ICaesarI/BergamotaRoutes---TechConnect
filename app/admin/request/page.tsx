@@ -14,6 +14,10 @@ import { deleteUser } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import SettingsLoader from "@techconnect /src/components/settingsLoader";
+<<<<<<< HEAD
+=======
+import Swal from "sweetalert2"; // Import SweetAlert2
+>>>>>>> origin/chino
 
 interface RequestData {
   uid: string;
@@ -92,6 +96,7 @@ const RequestsList: React.FC = () => {
       // Remove user from Firebase Auth
       const user = await auth.getUser(uid); // Ensure this user has the permissions
       if (user) await deleteUser(user);
+<<<<<<< HEAD
 
       // Update the requests state correctly using the previous state
       setRequests((prevRequests) =>
@@ -101,6 +106,12 @@ const RequestsList: React.FC = () => {
       alert("User rejected successfully.");
     } catch (error) {
       alert("Could not reject the user. Please check permissions.");
+=======
+      alert("User rejected successfully.");
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      alert("Could not reject user. Check permissions.");
+>>>>>>> origin/chino
     }
   };
 
@@ -132,7 +143,12 @@ const RequestsList: React.FC = () => {
         lastname: request.lastname,
         email: request.email,
         phoneNumber: request.phoneNumber,
+<<<<<<< HEAD
         role: "driver",
+=======
+        profileImage: request.profileImage,
+        createdAt: new Date(),
+>>>>>>> origin/chino
       });
 
       // Remove the document from "request"
@@ -145,7 +161,12 @@ const RequestsList: React.FC = () => {
 
       alert(`User with UID ${uid} accepted and moved to 'drivers'.`);
     } catch (error) {
+<<<<<<< HEAD
       alert("Could not accept the user. - " + error.message);
+=======
+      console.error("Error accepting user:", error);
+      alert("Could not accept user.");
+>>>>>>> origin/chino
     }
   };
 
