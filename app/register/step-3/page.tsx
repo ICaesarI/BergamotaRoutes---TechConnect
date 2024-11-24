@@ -81,9 +81,6 @@ export default function Step_2() {
 
       {/* Columna Derecha */}
       <div className="bg-white p-8 h-screen flex flex-col justify-center">
-        <h1 className="text-center text-2xl md:text-3xl font-bold mb-6">
-          Confirm Account
-        </h1>
         <div className="flex flex-col items-center justify-center min-h-screen">
           <h1 className="text-3xl font-bold mb-6">
             Por favor verifica tu correo

@@ -3,16 +3,62 @@
 import { useState } from "react";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
+import Swal from "sweetalert2";
 
 export default function RegisterAdmin() {
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    phone: "",
     role: "admin",
   });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required.";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required.";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Invalid email format.";
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required.";
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = "Phone number must be 10 digits.";
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = "Password is required.";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    } else if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = "Password must include at least one uppercase letter.";
+    } else if (!/\d/.test(formData.password)) {
+      newErrors.password = "Password must include at least one number.";
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -24,166 +70,205 @@ export default function RegisterAdmin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      alert("Las contraseñas no coinciden.");
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const db = getFirestore();
-
       const auth = getAuth();
-      createUserWithEmailAndPassword(auth, email, password).then(
-        (userCredential) => {
-          const user = userCredential.user;
-          console.log("Usuario registrado:", user);
-        }
-      );
+      const db = getFirestore();
+      const { email, password } = formData;
 
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const { uid } = userCredential.user;
 
-      // Datos para guardar
       const adminData = {
         uid,
-        name: formData.name,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
         role: formData.role,
         createdAt: new Date().toISOString(),
       };
 
-      // Guardar en la colección "admins"
+      // Guardar en la colección "admin" y "users"
       await setDoc(doc(db, "admin", uid), adminData);
-
-      // Guardar en la colección "users"
       await setDoc(doc(db, "users", uid), adminData);
 
-      alert("Administrador registrado exitosamente.");
+      // Mostrar ventana emergente de éxito
+      Swal.fire({
+        icon: "success",
+        title: "Administrador registrado",
+        text: "El administrador se registró exitosamente.",
+        confirmButtonColor: "#06b6d4",
+      });
+
+      // Reiniciar el formulario
       setFormData({
-        name: "",
+        firstName: "",
+        lastName: "",
         email: "",
         password: "",
         confirmPassword: "",
+        phone: "",
         role: "admin",
       });
     } catch (error: any) {
       console.error("Error al registrar administrador:", error.message);
-      alert("Hubo un error al registrar el administrador.");
+
+      // Mostrar ventana emergente de error
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Hubo un error al registrar el administrador.",
+        confirmButtonColor: "#f87171",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-          Registrar Admin
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Nombre completo */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-semibold text-gray-600"
-            >
-              Nombre completo
-            </label>
+    <div className="flex justify-center items-center min-h-screen bg-gray-900 px-4">
+      <form
+        className="form bg-gray-800 text-white p-6 rounded-2xl max-w-md w-full border border-gray-700"
+        onSubmit={handleSubmit}
+      >
+        <p className="title text-2xl font-semibold text-cyan-400 mb-4">
+          Register Admin
+        </p>
+        <p className="message text-sm text-gray-400 mb-4">
+          Sign up now and get full access to our app.
+        </p>
+
+        <div className="flex gap-4">
+          <label className="flex-1 relative">
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              name="firstName"
+              placeholder="First Name"
+              value={formData.firstName}
               onChange={handleChange}
-              className="w-full mt-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ingresa tu nombre completo"
+              className={`input w-full bg-gray-700 text-white py-3 px-4 rounded-lg outline-none focus:ring-2 ${
+                errors.firstName ? "ring-red-500" : "focus:ring-cyan-400"
+              }`}
               required
             />
-          </div>
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-semibold text-gray-600"
-            >
-              Correo electrónico
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full mt-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="admin@correo.com"
-              required
-            />
-          </div>
-          {/* Contraseña */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-semibold text-gray-600"
-            >
-              Contraseña
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full mt-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          {/* Confirmar contraseña */}
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-semibold text-gray-600"
-            >
-              Confirmar contraseña
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full mt-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          {/* Rol */}
-          <div>
-            <label
-              htmlFor="role"
-              className="block text-sm font-semibold text-gray-600"
-            >
-              Rol
-            </label>
+            {errors.firstName && (
+              <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+            )}
+          </label>
+
+          <label className="flex-1 relative">
             <input
               type="text"
-              id="role"
-              name="role"
-              value={formData.role}
-              readOnly
-              className="w-full mt-1 p-3 border border-gray-300 rounded-lg shadow-sm bg-gray-100 focus:outline-none cursor-not-allowed"
+              name="lastName"
+              placeholder="Last Name"
+              value={formData.lastName}
+              onChange={handleChange}
+              className={`input w-full bg-gray-700 text-white py-3 px-4 rounded-lg outline-none focus:ring-2 ${
+                errors.lastName ? "ring-red-500" : "focus:ring-cyan-400"
+              }`}
+              required
             />
-          </div>
-          {/* Botón de registro */}
-          <button
-            type="submit"
-            className="w-full py-3 px-4 text-white font-semibold bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-md hover:from-blue-500 hover:to-purple-500 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300"
-          >
-            Registrar
-          </button>
-        </form>
-      </div>
+            {errors.lastName && (
+              <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+            )}
+          </label>
+        </div>
+
+        <label className="relative mt-4">
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className={`input w-full mt-2 bg-gray-700 text-white py-3 px-4 rounded-lg outline-none focus:ring-2 ${
+              errors.email ? "ring-red-500" : "focus:ring-cyan-400"
+            }`}
+            required
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
+        </label>
+
+        <label className="relative mt-4">
+          <input
+            type="tel"
+            name="phone"
+            placeholder="Phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className={`input w-full mt-2 bg-gray-700 text-white py-3 px-4 rounded-lg outline-none focus:ring-2 ${
+              errors.phone ? "ring-red-500" : "focus:ring-cyan-400"
+            }`}
+            required
+          />
+          {errors.phone && (
+            <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+          )}
+        </label>
+
+        <label className="relative mt-4">
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className={`input w-full mt-2 bg-gray-700 text-white py-3 px-4 rounded-lg outline-none focus:ring-2 ${
+              errors.password ? "ring-red-500" : "focus:ring-cyan-400"
+            }`}
+            required
+          />
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+          )}
+        </label>
+
+        <label className="relative mt-4">
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            className={`input w-full mt-2 bg-gray-700 text-white py-3 px-4 rounded-lg outline-none focus:ring-2 ${
+              errors.confirmPassword ? "ring-red-500" : "focus:ring-cyan-400"
+            }`}
+            required
+          />
+          {errors.confirmPassword && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.confirmPassword}
+            </p>
+          )}
+        </label>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="submit w-full mt-6 py-3 px-4 bg-cyan-400 text-white rounded-lg font-semibold hover:bg-cyan-500 transition"
+        >
+          {loading ? "Registering..." : "Submit"}
+        </button>
+        <p className="signin text-sm text-gray-400 mt-4 text-center">
+          Already have an account?{" "}
+          <a href="/Login" className="text-cyan-400">
+            Sign in
+          </a>
+        </p>
+      </form>
     </div>
   );
 }

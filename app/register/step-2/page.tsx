@@ -7,8 +7,6 @@ import emailIcon from "@techconnect /src/img/emailLogo.png";
 import passwordIcon from "@techconnect /src/img/passwordLogo.png";
 import phoneIcon from "@techconnect /src/img/phoneIcon.png";
 
-import bcrypt from "bcryptjs";
-
 import { validateEmail } from "@techconnect /src/security/validateEmail";
 import { validatePasswordInput } from "@techconnect /src/security/validatePassword";
 import { validatePhoneNumber } from "@techconnect /src/security/validatePhoneNumber";
@@ -36,6 +34,7 @@ import {
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import { doc, setDoc } from "firebase/firestore";
 import PhotoUpload from "@techconnect /src/components/photoUpload";
+import Swal from "sweetalert2";
 
 export default function Step_2() {
   const [email, setEmail] = useState("");
@@ -48,73 +47,86 @@ export default function Step_2() {
 
   const handleBack = () => router.push("/register/step-1");
 
-  const handleNext = async () => {
-    const validationErrors = {};
+  // Manejo del clic en el botón "Siguiente"
+  // Change the handleNextClick function to be asynchronous
+const handleNextClick = async () => {  // Add 'async' here
+  const newErrors: { [key: string]: string } = {};
 
-    if (!validateEmail(email)) {
-      validationErrors.email = "The email is invalid";
-    }
+  const emailError = validateEmail(email); // Validación del correo electrónico
+  if (emailError) {
+    newErrors.email = emailError;
+  }
 
-    if (!validatePasswordInput(password)) {
-      validationErrors.password =
-        "The password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.";
-    }
+  // Validación de la contraseña
+  const passwordError = validatePasswordInput(password);
+  if (passwordError) {
+    newErrors.password = passwordError;
+  }
 
-    if (password !== passwordConfirm) {
-      validationErrors.passwordConfirm = "Passwords do not match";
-    }
+  if (password !== passwordConfirm) {
+    newErrors.passwordConfirm = "Las contraseñas no coinciden.";
+  }
 
-    if (!validatePhoneNumber(phoneNumber)) {
-      validationErrors.phoneNumber = "The phone number is invalid";
-    }
+  const phoneError = validatePhoneNumber(phoneNumber);
+  if (phoneError) {
+    newErrors.phoneNumber = phoneError;
+  }
 
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    const errorMessages = Object.values(newErrors).join("<br />"); // Unir los errores con saltos de línea
 
-    setErrors({});
-    updateRegisterData({ email, password, phoneNumber });
+      // Mostramos un SweetAlert2 con los errores
+      Swal.fire({
+        icon: "error",
+        title: "Formulario incompleto",
+        html: errorMessages,
+        confirmButtonText: "Aceptar",
+      });
+    return; // Exit early if there are errors
+  }
 
-    try {
-      // Hashear la contraseña antes de crear el usuario
-      const hashedPassword = await bcrypt.hash(password, 10);
+  setErrors({});
+  updateRegisterData({ email, password, phoneNumber });
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        hashedPassword
+  try {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    const user = userCredential.user;
+
+    await sendEmailVerification(user);
+
+    if (registerData.profileImage) {
+      const storage = getStorage();
+      const storageRef = ref(
+        storage,
+        `driversProfilePictures/${user.uid}/profileImage.jpg`
       );
-      const user = userCredential.user;
+      await uploadString(storageRef, registerData.profileImage, "data_url");
+      const imageUrl = await getDownloadURL(storageRef);
 
-      await sendEmailVerification(user);
-
-      if (registerData.profileImage) {
-        const storage = getStorage();
-        const storageRef = ref(
-          storage,
-          `driversProfilePictures/${user.uid}/profileImage.jpg`
-        );
-        await uploadString(storageRef, registerData.profileImage, "data_url");
-        const imageUrl = await getDownloadURL(storageRef);
-
-        await setDoc(doc(db, "request", user.uid), {
-          ...registerData,
-          uid: user.uid,
-          email,
-          hashedPassword,
-          phoneNumber,
-          profileImage: imageUrl,
-          createdAt: new Date(),
-        });
-      }
-
-      router.push("/register/step-3");
-    } catch (error) {
-      console.error("Error al registrar al usuario:", error);
-      alert("Error al registrar al usuario: " + error.message);
+      await setDoc(doc(db, "request", user.uid), {
+        ...registerData,
+        uid: user.uid,
+        name,
+        email,
+        password,
+        phoneNumber,
+        profileImage: imageUrl,
+        createdAt: new Date(),
+      });
     }
-  };
+
+    router.push("/register/step-3");
+  } catch (error) {
+    console.error("Error al registrar al usuario:", error);
+    alert("Error al registrar al usuario: " + error.message);
+  }
+};
+
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
@@ -159,6 +171,7 @@ export default function Step_2() {
           <div className="flex items-center bg-gray-main p-3 rounded-lg">
             <InputField
               label=""
+              type="email"
               placeholder="Enter your email address"
               icon={emailIcon}
               value={email}
@@ -228,7 +241,7 @@ export default function Step_2() {
             Back
           </button>
           <button
-            onClick={handleNext}
+            onClick={handleNextClick}
             className="bg-black-main text-white w-28 text-center rounded-full text-2xl hover:opacity-80 transition duration-300 cursor-pointer p-3"
           >
             Next

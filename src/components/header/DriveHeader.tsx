@@ -1,16 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Logo } from "../Logo";
 import { Menu, Close } from "@mui/icons-material";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
+import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
+import { getFirestore, doc, getDoc } from "firebase/firestore"; // Importa Firestore
+import driverIcon from "@techconnect /src/img/userIcon.png";
 
 export function DriveHeader() {
   const [isOpen, setIsOpen] = useState(false);
+  const profileRef = useRef(null); // Referencia para el perfil
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const currentRoute = usePathname(); // Obtenemos la ruta actual
+  const [driverData, setDriverData] = useState(null); // Para almacenar los datos del driver logueado
+
+  useEffect(() => {
+    const user = auth.currentUser; // Obtener el usuario logueado
+
+    if (user) {
+      const userRef = doc(db, "drivers", user.uid); // Asumiendo que tienes una colección 'drivers'
+      getDoc(userRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            // Si existe el documento, obtén los datos
+            setDriverData(docSnap.data());
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "No se encontró el documento",
+              text: "No se pudo encontrar los datos del driveristrador en la base de datos.",
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error obteniendo datos del driveristrador: ", error);
+          Swal.fire({
+            icon: "error",
+            title: "Error al obtener datos",
+            text: "Hubo un problema al intentar obtener los datos del administrador.",
+          });
+        });
+    }
+  }, []);
 
   return (
     <header className="flex flex-col items-center w-full border-b-2 border-black-main bg-black-main p-4 lg:flex-row">
@@ -19,12 +54,12 @@ export function DriveHeader() {
 
         <div>
           <button
-          onClick={toggleMenu}
-          className="text-white ml-auto lg:hidden mt-2"
-          aria-label="Toggle menu"
-        >
-          {isOpen ? <Close fontSize="large" /> : <Menu fontSize="large" />}
-        </button>
+            onClick={toggleMenu}
+            className="text-white ml-auto lg:hidden mt-2"
+            aria-label="Toggle menu"
+          >
+            {isOpen ? <Close fontSize="large" /> : <Menu fontSize="large" />}
+          </button>
         </div>
       </div>
 
@@ -56,12 +91,16 @@ export function DriveHeader() {
           </li>
           <li>
             <Link
-              href="/profile"
+              href="/Driver"
               className={`${
                 currentRoute === "/profile" ? "text-blue-500" : "text-white"
               } hover:text-blue-hover transition-colors duration-300 font-bold text-2xl`}
             >
-              Ver Perfil
+              <img
+                src={driverData?.profileImage || driverIcon}
+                alt="Admin Profile"
+                className="h-12 w-12 rounded-full border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 object-cover transform hover:scale-110 hover:rotate-6"
+              />
             </Link>
           </li>
         </ul>

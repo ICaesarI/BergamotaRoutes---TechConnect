@@ -9,6 +9,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore"; // Importa Fires
 import { auth, db } from "@techconnect /src/database/firebaseConfiguration";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export function AdminHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +18,7 @@ export function AdminHeader() {
   const [adminData, setAdminData] = useState(null); // Para almacenar los datos del admin logueado
 
   const toggleMenu = () => setIsOpen(!isOpen);
-  const route = useRouter();
+  const router = useRouter();
   const currentRoute = usePathname(); // Obtenemos la ruta actual
 
   const handleProfileClick = (e) => {
@@ -48,25 +49,59 @@ export function AdminHeader() {
 
     if (user) {
       const userRef = doc(db, "admin", user.uid); // Asumiendo que tienes una colección 'admins'
-      getDoc(userRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          // Si existe el documento, obtén los datos
-          setAdminData(docSnap.data());
-        } else {
-          console.log("No such document!");
-        }
-      });
+      getDoc(userRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            // Si existe el documento, obtén los datos
+            setAdminData(docSnap.data());
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "No se encontró el documento",
+              text: "No se pudo encontrar los datos del administrador en la base de datos.",
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error obteniendo datos del administrador: ", error);
+          Swal.fire({
+            icon: "error",
+            title: "Error al obtener datos",
+            text: "Hubo un problema al intentar obtener los datos del administrador.",
+          });
+        });
     }
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth); // Cerrar sesión
-      setShowProfile(false); // Cierra el perfil después de cerrar sesión
-      route.push("/Login");
-    } catch (error) {
-      console.error("Error signing out: ", error);
-    }
+  const handleSignOut = async () => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Logging out will end your current session!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, log out",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await signOut(auth);
+          router.push("/"); // Redirect to login
+          Swal.fire(
+            "Logged out!",
+            "You have successfully logged out.",
+            "success"
+          );
+        } catch (error) {
+          console.error("Error logging out", error);
+          Swal.fire(
+            "Error",
+            "There was a problem logging out. Please try again.",
+            "error"
+          );
+        }
+      }
+    });
   };
 
   return (
@@ -117,8 +152,8 @@ export function AdminHeader() {
               onClick={handleProfileClick}
               className="text-white hover:text-blue-hover transition-colors duration-300"
             >
-              <Image
-                src={adminData?.photoURL || adminIcon}
+              <img
+                src={adminData?.profileImage || adminIcon}
                 alt="Admin Profile"
                 className="h-12 w-12 rounded-full border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 object-cover transform hover:scale-110 hover:rotate-6"
               />
@@ -140,8 +175,8 @@ export function AdminHeader() {
             <div className="h-24 bg-green-400"></div>
             <div className="flex flex-col items-center gap-4 px-5 py-5">
               <div className="-mt-20">
-                <Image
-                  src={adminData.photoURL || adminIcon}
+                <img
+                  src={adminData.profileImage || adminIcon}
                   alt="Admin Profile"
                   className="h-40 w-40 rounded-full border-4 border-white"
                 />
@@ -157,7 +192,7 @@ export function AdminHeader() {
                   Edit Profile
                 </Link>
                 <button
-                  onClick={handleLogout}
+                  onClick={handleSignOut}
                   className="text-white bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600"
                 >
                   Logout

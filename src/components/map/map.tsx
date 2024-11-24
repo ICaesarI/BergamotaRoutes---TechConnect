@@ -13,6 +13,7 @@ import {
   deleteField,
   arrayUnion,
   GeoPoint,
+  serverTimestamp,
 } from "firebase/firestore"; // Asegúrate de que getDocs esté incluido
 import { db, auth } from "@techconnect /src/database/firebaseConfiguration";
 import { optimizeRoute } from "./RouteOptimizer";
@@ -25,6 +26,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@techconnect /src/auth/useAuth";
 
 interface MarkerData {
   lat: number;
@@ -36,6 +38,7 @@ interface MarkerData {
 }
 
 const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
+  const { user } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const userLocationRef = useRef<L.LatLng | null>(null);
   const [sortedMarkers, setSortedMarkers] = useState<
@@ -48,8 +51,50 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   const swiperRef = useRef<Swiper | null>(null); // Referencia para controlar Swiper
   const router = useRouter();
   const [driverUid, setDriverUid] = useState<string>(""); // UID del conductor
+  const [showReport, setShowReport] = useState(false);
+  const [reportSent, setReportSent] = useState(false); // Estado para determinar si el reporte fue enviado
+  const [reportDescription, setReportDescription] = useState("");
 
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
+
+  const handleOpenReport = () => {
+    setShowReport(true);
+    setReportSent(false); // Reinicia el estado del reporte enviado cuando se abre el modal
+  };
+
+  const handleCloseReport = () => {
+    setShowReport(false);
+    setReportDescription(""); // Limpia el formulario
+    setReportSent(false); // Restablece el estado del reporte enviado
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportDescription.trim()) {
+      alert("Please provide a description for the report.");
+      return;
+    }
+
+    setLoading(true);
+    if (user) {
+      try {
+        const reportRef = doc(db, "issue", `${user.uid}_${Date.now()}`);
+        await setDoc(reportRef, {
+          userId: user.uid,
+          description: reportDescription,
+          createdAt: serverTimestamp(),
+        });
+        setReportSent(true); // Mark the report as sent
+        setReportDescription(""); // Clear the description
+      } catch (error) {
+        alert(
+          "An error occurred while submitting the report. Please try again."
+        );
+      }
+    } else {
+      alert("User not authenticated. Please log in.");
+    }
+    setLoading(false);
+  };
 
   const fetchMarkersFromFirestore = async () => {
     const docRef = doc(db, "tracking", routeCode);
@@ -167,15 +212,21 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
 
       if (optimizedRoute.length > 0) {
         const firstMarker = optimizedRoute[0];
-       
-          const packageRef = doc(db, "paquetesPrueba", firstMarker.id);
-          try {
-            await updateDoc(packageRef, { showRoute: true, step:"En camino", message:"El repartidor se dirige a tu domicilio"});
-            console.log(`showRoute actualizado a true para el paquete: ${firstMarker.id}`);
-          } catch (error) {
-            console.error("Error al actualizar showRoute:", error);
-          }
-      }
+
+        const packageRef = doc(db, "paquetesPrueba", firstMarker.id);
+        try {
+          await updateDoc(packageRef, {
+            showRoute: true,
+            step: "En camino",
+            message: "El repartidor se dirige a tu domicilio",
+          });
+          console.log(
+            `showRoute actualizado a true para el paquete: ${firstMarker.id}`
+          );
+        } catch (error) {
+          console.error("Error al actualizar showRoute:", error);
+        }
+      }
 
       // Filtrar los marcadores excluyendo aquellos que ya fueron "Entregado" en statusDriver
       const filteredMarkers = optimizedRoute.filter((marker) => {
@@ -218,9 +269,7 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
       setLoading(false);
     };
 
-
     initializeMap();
-
 
     return () => {
       if (mapRef.current) {
@@ -255,37 +304,30 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
   };
 
   const handleReportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const today = new Date();
-    const dateKey = today.toISOString().split("T")[0]; // Obtiene la fecha en formato YYYY-MM-DD
-    const docRef = doc(db, "issues", dateKey);
-    const description = (e.target as any).elements[0].value;
-
-    console.log("Intentando acceder a:", docRef.path);
-
-    try {
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        console.log("Documento existente encontrado. Actualizando...");
-        await updateDoc(docRef, {
-          updatedAt: new Date().toISOString(),
-          description,
-        });
-        console.log("Reporte actualizado");
-      } else {
-        console.log("Documento no encontrado. Creando uno nuevo...");
-        await setDoc(docRef, {
-          createdAt: new Date().toISOString(),
-          description,
-        });
-        console.log("Reporte creado");
-      }
-      setReportVisible(false); // Cierra el formulario después de enviar
-    } catch (error) {
-      console.error("Error al enviar el reporte:", error);
+    if (!reportDescription.trim()) {
+      alert("Por favor, escribe una descripción para el reporte.");
+      return;
     }
+
+    setLoading(true);
+    if (user) {
+      try {
+        const reportRef = doc(db, "issue", `${user.uid}_${Date.now()}`);
+        await setDoc(reportRef, {
+          userId: user.uid,
+          description: reportDescription,
+          createdAt: serverTimestamp(),
+        });
+        setReportSent(true); // Marca el reporte como enviado
+        setReportDescription(""); // Limpia la descripción
+      } catch (error) {
+        console.error("Error al enviar el reporte:", error);
+        alert("Hubo un error al enviar el reporte. Inténtalo de nuevo.");
+      }
+    } else {
+      alert("Usuario no autenticado. Por favor, inicia sesión.");
+    }
+    setLoading(false);
   };
 
   // Función para manejar el clic en el marcador
@@ -297,92 +339,112 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
     if (index === currentRouteIndex) {
       const marker = sortedMarkers[index];
       const markerId = marker.id;
-  
+
       if (!markerId) {
         console.error("No se encontró el ID del marcador.");
         return;
       }
-  
+
       console.log("Entregando marcador:", marker);
-      
+
       const markerRef2 = doc(db, "paquetesPrueba", markerId);
-      
+
       try {
         // Actualiza el estado del marcador actual en la base de datos
         await updateDoc(markerRef2, {
           step: "Entregado",
           message: "Tu pedido fue entregado",
-          showRoute: false
+          showRoute: false,
         });
-      }catch (error) {
-          console.error("Error al actualizar el estado del marcador:", error);
-        }
-  
+      } catch (error) {
+        console.error("Error al actualizar el estado del marcador:", error);
+      }
+
       const markerRef = doc(db, "tracking", routeCode, "packages", markerId);
       const trackingRef = doc(db, "tracking", routeCode);
-      
+
       try {
         // Actualiza el estado del marcador actual en la base de datos
         await updateDoc(markerRef, {
           statusDriver: "Entregado",
         });
-  
+
         // Actualiza el estado local de los marcadores
         setSortedMarkers((prevMarkers) => {
           const updatedMarkers = prevMarkers.map((m, i) =>
             i === index ? { ...m, statusDriver: "Entregado" } : m
           );
-  
+
           // Si hay un siguiente marcador, establece showRoute: true
           if (index + 1 < updatedMarkers.length) {
             updatedMarkers[index + 1].showRoute = true;
           }
-  
+
           return updatedMarkers;
         });
-  
+
         // Verifica si es el último marcador
         if (index === sortedMarkers.length - 1) {
           // Mueve el UID de la ruta actual a finishedRoutes y elimina actualRoute
-          const driverRef = doc(db, "drivers", driverUid, "routes", "actualRoute");
-          const finishedRoutesRef = doc(db, "drivers", driverUid, "routes", "finishedRoutes");
-  
+          const driverRef = doc(
+            db,
+            "drivers",
+            driverUid,
+            "routes",
+            "actualRoute"
+          );
+          const finishedRoutesRef = doc(
+            db,
+            "drivers",
+            driverUid,
+            "routes",
+            "finishedRoutes"
+          );
+
+          // Verifica si el documento finishedRoutes existe
+          const finishedRoutesSnapshot = await getDoc(finishedRoutesRef);
+
+          if (!finishedRoutesSnapshot.exists()) {
+            // Crea el documento si no existe
+            await setDoc(finishedRoutesRef, { routes: [] });
+          }
+
           await updateDoc(driverRef, {
             routeUID: deleteField(), // Elimina el UID de la ruta de actualRoute
           });
-  
+
           await updateDoc(finishedRoutesRef, {
             routes: arrayUnion(routeCode), // Mueve el UID de la ruta a finishedRoutes
           });
-  
+
           await updateDoc(trackingRef, {
             statusTracking: "Finished",
           });
-  
+
           // Redirige a /tracking si es el último marcador
           router.push("/tracking");
         } else {
           // Cambia al siguiente marcador en la lista
           const nextIndex = index + 1;
           setCurrentRouteIndex(nextIndex);
-  
+
           if (swiperRef.current && swiperRef.current.swiper) {
             swiperRef.current.swiper.slideTo(nextIndex);
           }
-  
+
           // Actualiza showRoute en la base de datos para el siguiente marcador
           const nextMarkerId = sortedMarkers[nextIndex].id;
           const nextMarkerRef = doc(db, "paquetesPrueba", nextMarkerId);
           await updateDoc(nextMarkerRef, {
             showRoute: true,
             step: "En camino",
-            message: "El driver se dirige a tu domicilio"
+            message: "El driver se dirige a tu domicilio",
           });
         }
       } catch (error) {
         console.error("Error al actualizar el estado del marcador:", error);
-      }
-    }
+      }
+    }
   };
 
   return (
@@ -532,18 +594,63 @@ const MapComponent: React.FC<{ routeCode: string }> = ({ routeCode }) => {
               <div className="loader mr-4"></div>
             </button>
           </div>
+          <button
+            onClick={handleOpenReport}
+            className="shadow-lg bg-gray-500 text-white font-bold py-2 px-4 rounded hover:bg-gray-700"
+          >
+            Reportar
+          </button>
           {/* Botón para abrir el formulario de reporte */}
-          <div>
-            <button
-              onClick={() => setReportVisible(!reportVisible)}
-              className="relative group inline-block p-px font-semibold leading-6 text-white shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
-            >
-              <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
-              <span className="relative z-10 block px-6 py-3 rounded-xl bg-gray-950">
-                Reportar
-              </span>
-            </button>
-          </div>
+          {/* Modal de reporte */}
+          {showReport && (
+            <div className="absolute top-16 right-4 bg-white shadow-lg rounded-lg p-4 w-80 z-20">
+              {reportSent ? (
+                // Mensaje de confirmación de envío exitoso
+                <div className="text-center">
+                  <h2 className="text-lg font-bold mb-2 text-gray-700">
+                    Reporte enviado con éxito
+                  </h2>
+                  <p className="text-gray-600">
+                    Esperamos darte una pronta solución.
+                  </p>
+                  <button
+                    onClick={handleCloseReport}
+                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              ) : (
+                // Formulario de descripción
+                <>
+                  <h2 className="text-lg font-bold mb-2 text-gray-700">
+                    Reportar un fallo
+                  </h2>
+                  <textarea
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    placeholder="Describe el fallo o problema..."
+                    className="w-full h-24 border border-gray-500 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  ></textarea>
+                  <div className="flex justify-between mt-4">
+                    <button
+                      onClick={handleCloseReport}
+                      className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Regresar
+                    </button>
+                    <button
+                      onClick={handleSubmitReport}
+                      disabled={loading}
+                      className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      {loading ? "Enviando..." : "Enviar"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div>
             {/* Botón de regresar */}
             <Link

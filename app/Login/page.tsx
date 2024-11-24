@@ -4,13 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signInUser } from "@techconnect /src/components/signInUser";
 import { useRouter } from "next/navigation";
-import { db, auth } from "@techconnect /src/database/firebaseConfiguration"; // Ajusta la ruta según tu proyecto
+import Swal from "sweetalert2";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   // Cargar el email desde localStorage si existe
@@ -24,20 +23,9 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Resetea errores previos
-
     try {
-      // Autenticación de usuario
       const user = await signInUser(email, password);
       console.log("Inicio de sesión exitoso:", user);
-
-      // Verifica si el usuario está en la tabla "request"
-      const requestRef = doc(db, "request", user.uid);
-      const requestDoc = await getDoc(requestRef);
-
-      if (requestDoc.exists()) {
-        setError("Your account has not yet been assigned by an administrator. Please wait for the authorization process to be completed.");
-      }
 
       // Guardar el email si "Remember me" está marcado
       if (rememberMe) {
@@ -48,15 +36,23 @@ export default function LoginPage() {
 
       router.push("/"); // Redirecciona a la página principal
     } catch (err: any) {
-      if (err.message === "auth/user-in-request") {
-        setError("El usuario no está autenticado.");
-      } else if (
-        err.message === "auth/wrong-password" ||
-        err.message === "Firebase: Error (auth/invalid-credential)."
-      ) {
-        setError("Correo o contraseña incorrectos.");
-      } else {
-        setError("Error al iniciar sesión. Intenta nuevamente.");
+      // Usar Swal para mostrar el mensaje de error
+      switch (err.message) {
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Correo o contraseña incorrectos.",
+          });
+          break;
+        default:
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Error al iniciar sesión. Intenta nuevamente.",
+          });
+          break;
       }
     }
   };
@@ -117,9 +113,6 @@ export default function LoginPage() {
               placeholder="********"
             />
           </div>
-
-          {/* Display error messages if any */}
-          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
             <div>

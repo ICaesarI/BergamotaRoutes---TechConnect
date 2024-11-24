@@ -9,10 +9,10 @@ import {
   doc,
   setDoc,
   GeoPoint,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "@techconnect /src/database/firebaseConfiguration";
 import { getCoordinatesFromAddress } from "@techconnect /src/components/tracking/getCoordinatesFromAddress";
+import Swal from "sweetalert2"; // Importa SweetAlert
 
 const CrearPaquete = () => {
   const [nombre, setNombre] = useState("");
@@ -25,17 +25,11 @@ const CrearPaquete = () => {
   const [codigoPostal, setCodigoPostal] = useState("");
   const [calle, setCalle] = useState("");
   const [numeroCalle, setNumeroCalle] = useState("");
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [number, setNumber] = useState("");
   const [showRoute, setShowRoute] = useState(false);
   const [step, setStep] = useState("Pendiente");
   const [message, setMessage] = useState("");
-
-  function generateUniqueId(): string {
-    return Math.random().toString(36).substring(2, 7); // Genera una cadena aleatoria de 5 caracteres
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +37,23 @@ const CrearPaquete = () => {
     const fullAddress = `${calle} ${numeroCalle}, ${colonia}, ${ciudad}, ${estadoDireccion}, ${pais}, ${codigoPostal}`;
 
     try {
+      // Muestra alerta de que se están obteniendo las coordenadas
+      Swal.fire({
+        title: "Procesando...",
+        text: "Obteniendo coordenadas de la dirección...",
+        icon: "info",
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        willOpen: () => {
+          Swal.showLoading(); // Muestra el loading spinner
+        },
+      });
+
       const coordinates = await getCoordinatesFromAddress(fullAddress);
+
       if (coordinates) {
         setLocation(coordinates);
 
-        // Crear el paquete en la colección 'paquetesPrueba'
         const docRef = await addDoc(collection(db, "paquetesPrueba"), {
           nombre,
           descripcion,
@@ -69,34 +75,11 @@ const CrearPaquete = () => {
 
         await updateDoc(doc(db, "paquetesPrueba", paqueteId), {
           uid: paqueteId,
-          status: `/paquetesPrueba/${paqueteId}`,
+          status: `/pauquetesPrueba/${paqueteId}`,
         });
 
-        // Contar el número de paquetes en los documentos de tracking
-        const trackingRef = collection(db, "tracking");
-        const trackingSnapshot = await getDocs(trackingRef);
-        let trackingDocId = "";
-
-        // Buscar un documento de tracking con menos de 5 paquetes
-        for (let doc of trackingSnapshot.docs) {
-          const packagesRef = collection(db, `tracking/${doc.id}/packages`);
-          const packagesSnapshot = await getDocs(packagesRef);
-
-          if (packagesSnapshot.size < 5) {
-            trackingDocId = doc.id; // Encontramos un documento con menos de 5 paquetes
-            break;
-          }
-        }
-
-        // Si no encontramos un documento con menos de 5 paquetes, crear uno nuevo
-        if (!trackingDocId) {
-          trackingDocId = generateUniqueId(); // Genera un nuevo ID de documento
-          await setDoc(doc(db, `tracking/${trackingDocId}`), { packages: [] });
-        }
-
-        // Agregar el paquete al documento de tracking correspondiente
         await setDoc(
-          doc(db, `tracking/${trackingDocId}/packages/${paqueteId}`),
+          doc(db, `tracking/9V2pmqZC2zNqxjRBuHOO/packages/${paqueteId}`),
           {
             address: fullAddress,
             location: new GeoPoint(coordinates.lat, coordinates.lng),
@@ -105,13 +88,17 @@ const CrearPaquete = () => {
           }
         );
 
-        await setDoc(doc(db, `tracking/${trackingDocId}`), {
-          driverUID: "", // Puede ser modificado según tus necesidades
+        console.log("Paquete creado y agregado a tracking con ID:", paqueteId);
+        
+        // Muestra alerta de éxito
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "El paquete fue creado correctamente.",
+          icon: "success",
+          confirmButtonText: "Aceptar",
         });
 
-        console.log("Paquete creado y agregado a tracking con ID:", paqueteId);
-
-        // Limpiar el formulario
+        // Resetear campos
         setNombre("");
         setDescripcion("");
         setPeso("");
@@ -127,12 +114,24 @@ const CrearPaquete = () => {
         setShowRoute(false);
         setStep("Pendiente");
         setMessage("El paquete aún no ha comenzado su ruta");
+
       } else {
-        console.error(
-          "No se pudieron obtener las coordenadas de la dirección."
-        );
+        // Muestra alerta de error si no se pudieron obtener las coordenadas
+        Swal.fire({
+          title: "Error",
+          text: "No se pudieron obtener las coordenadas de la dirección.",
+          icon: "error",
+          confirmButtonText: "Aceptar",
+        });
       }
     } catch (e) {
+      // Muestra alerta de error general
+      Swal.fire({
+        title: "Error",
+        text: "Ocurrió un error al agregar el paquete.",
+        icon: "error",
+        confirmButtonText: "Aceptar",
+      });
       console.error("Error al agregar el paquete: ", e);
     }
   };
@@ -294,46 +293,11 @@ const CrearPaquete = () => {
             </div>
           </div>
 
-          <div className="flex space-x-2">
-            <div className="w-1/2">
-              <label
-                htmlFor="ciudad"
-                className="text-center block text-xs font-medium text-gray-700"
-              >
-                City
-              </label>
-              <input
-                type="text"
-                id="ciudad"
-                value={ciudad}
-                onChange={(e) => setCiudad(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
-              />
-            </div>
-            <div className="w-1/2">
-              <label
-                htmlFor="codigoPostal"
-                className="text-center block text-xs font-medium text-gray-700"
-              >
-                Postal Code
-              </label>
-              <input
-                type="text"
-                id="codigoPostal"
-                value={codigoPostal}
-                onChange={(e) => setCodigoPostal(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded w-full text-sm text-center"
-              />
-            </div>
-          </div>
-
           <button
             type="submit"
-            className="w-full bg-black text-white p-2 rounded hover:bg-gray-700 transition-colors duration-300 font-semibold text-sm text-center"
+            className="mt-4 py-2 px-4 text-white bg-blue-500 rounded hover:bg-blue-600"
           >
-            Make Purchase
+            Create Package
           </button>
         </form>
       </div>

@@ -13,6 +13,8 @@ import { Tuerca } from "@techconnect /src/components/HowWorks";
 import { Diamond } from "@techconnect /src/components/quality";
 import { Money } from "@techconnect /src/components/reliability";
 
+
+
 export default function Home() {
   const slides = [
     {
@@ -39,7 +41,7 @@ export default function Home() {
     const newIndex = isFirstSlide ? slides.length - 1 : currentIndex - 1;
     setCurrentIndex(newIndex);
   };
-
+  
   const nextSlide = () => {
     const isLastSlide = currentIndex === slides.length - 1;
     const newIndex = isLastSlide ? 0 : currentIndex + 1;
@@ -90,6 +92,7 @@ export default function Home() {
               delivery. Optimize your routes and improve your parcel service
               today!
             </p>
+            
           </div>
         </div>
       </div>

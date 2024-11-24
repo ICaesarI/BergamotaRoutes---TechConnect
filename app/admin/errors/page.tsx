@@ -28,7 +28,7 @@ export default function ErrorReports() {
     const fetchErrorReports = async () => {
       try {
         const issuesQuery = query(
-          collection(db, "issues"),
+          collection(db, "issue"),
           orderBy("createdAt", "desc")
         );
         const issuesSnapshot = await getDocs(issuesQuery);

@@ -47,6 +47,8 @@ export default function Admin() {
       const adminSnapshot = await getDoc(adminDoc); // Usamos getDoc para un único documento
       if (adminSnapshot.exists()) {
         setIsAdmin(true); // Si el documento existe, es admin
+        const adminData = adminSnapshot.data();
+        setUserData(adminData); // Guardamos los datos del admin en el estado
       } else {
         setIsAdmin(false); // Si no existe, no es admin
       }
@@ -65,7 +67,7 @@ export default function Admin() {
     const fetchData = async () => {
       try {
         // Contar errores
-        const issuesCollection = collection(db, "issues");
+        const issuesCollection = collection(db, "issue");
         const issuesSnapshot = await getDocs(issuesCollection);
         setTotalErrors(issuesSnapshot.docs.length);
 
@@ -91,7 +93,7 @@ export default function Admin() {
 
         // Obtener el último "issue" registrado
         const issuesQuery = query(
-          collection(db, "issues"),
+          collection(db, "issue"),
           orderBy("createdAt", "desc"),
           limit(1)
         );
@@ -307,7 +309,7 @@ export default function Admin() {
           />
           <div className="text-center font-bold">
             <div>{userData?.name || "Admin"}</div>
-            <div>{userData?.role || "Error"}</div>
+            <div>{userData?.email || "Error"}</div>
           </div>
         </div>
 
