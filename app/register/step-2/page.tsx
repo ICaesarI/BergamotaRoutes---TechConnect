@@ -7,6 +7,8 @@ import emailIcon from "@techconnect /src/img/emailLogo.png";
 import passwordIcon from "@techconnect /src/img/passwordLogo.png";
 import phoneIcon from "@techconnect /src/img/phoneIcon.png";
 
+import bcrypt from "bcryptjs";
+
 import { validateEmail } from "@techconnect /src/security/validateEmail";
 import { validatePasswordInput } from "@techconnect /src/security/validatePassword";
 import { validatePhoneNumber } from "@techconnect /src/security/validatePhoneNumber";
@@ -90,10 +92,13 @@ const handleNextClick = async () => {  // Add 'async' here
   updateRegisterData({ email, password, phoneNumber });
 
   try {
+      // Hashear la contraseña antes de crear el usuario
+      const hashedPassword = await bcrypt.hash(password, 10);
+
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
-      password
+      hashedPassword
     );
     const user = userCredential.user;
 
@@ -108,17 +113,16 @@ const handleNextClick = async () => {  // Add 'async' here
       await uploadString(storageRef, registerData.profileImage, "data_url");
       const imageUrl = await getDownloadURL(storageRef);
 
-      await setDoc(doc(db, "request", user.uid), {
-        ...registerData,
-        uid: user.uid,
-        name,
-        email,
-        password,
-        phoneNumber,
-        profileImage: imageUrl,
-        createdAt: new Date(),
-      });
-    }
+        await setDoc(doc(db, "request", user.uid), {
+          ...registerData,
+          uid: user.uid,
+          email,
+          password,
+          phoneNumber,
+          profileImage: imageUrl,
+          createdAt: new Date(),
+        });
+      }
 
     router.push("/register/step-3");
   } catch (error) {

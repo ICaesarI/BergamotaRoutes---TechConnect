@@ -200,7 +200,7 @@ const MapComponent: React.FC<{ trackingCode: string }> = ({ trackingCode }) => {
 
       // Luego, volvemos a inicializar el mapa con la nueva ubicación
       initializeMapWithRoute();
-    }, 30000); // 30000 milisegundos = 30 segundos
+    }, 10000); // 30000 milisegundos = 30 segundos
 
     // Llamar a la función una vez al inicio
     initializeMapWithRoute();
