@@ -112,7 +112,6 @@ export default function Step_2() {
         await setDoc(doc(db, "request", user.uid), {
           ...registerData,
           uid: user.uid,
-          name,
           email,
           password,
           phoneNumber,
